@@ -132,8 +132,9 @@ func _draw_zone_overlays() -> void:
 			grid_to_world(Vector2(origin + size)),
 			grid_to_world(Vector2(origin + Vector2i(0, size.y))),
 		])
-		draw_colored_polygon(polygon, zone["color"])
-		_draw_closed_outline(polygon, Color(zone["color"]).lightened(0.55), 2.0)
+		var zone_color: Color = zone["color"]
+		draw_colored_polygon(polygon, zone_color)
+		_draw_closed_outline(polygon, zone_color.lightened(0.55), 2.0)
 
 		var label_position := grid_to_world(Vector2(origin) + Vector2(size) * 0.5)
 		draw_string(
