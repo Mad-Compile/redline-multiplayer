@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/terminal_09_map.gd" id="1_map_script"]
+[ext_resource type="TileSet" path="res://resources/tilesets/iso_128x64.tres" id="2_iso_tileset"]
+
+[node name="Terminal09" type="Node2D"]
+y_sort_enabled = true
+script = ExtResource("1_map_script")
+
+[node name="Layers" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Ground" type="TileMapLayer" parent="Layers"]
+z_index = -20
+tile_set = ExtResource("2_iso_tileset")
+
+[node name="GroundDetails" type="TileMapLayer" parent="Layers"]
+z_index = -10
+y_sort_enabled = true
+tile_set = ExtResource("2_iso_tileset")
+
+[node name="WorldStructures" type="Node2D" parent="Layers"]
+y_sort_enabled = true
+
+[node name="WorldProps" type="Node2D" parent="Layers"]
+y_sort_enabled = true
+
+[node name="Actors" type="Node2D" parent="Layers"]
+y_sort_enabled = true
+
+[node name="Overhead" type="Node2D" parent="Layers"]
+z_index = 20
+
+[node name="Lighting" type="Node2D" parent="Layers"]
+
+[node name="Gameplay" type="Node2D" parent="."]
+
+[node name="MapMarkers" type="Node2D" parent="Gameplay"]
