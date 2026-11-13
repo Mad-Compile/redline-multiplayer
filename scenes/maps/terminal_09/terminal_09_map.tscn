@@ -12,6 +12,7 @@ y_sort_enabled = true
 
 [node name="Ground" type="TileMapLayer" parent="Layers"]
 z_index = -20
+y_sort_enabled = true
 tile_set = ExtResource("2_iso_tileset")
 
 [node name="GroundDetails" type="TileMapLayer" parent="Layers"]
