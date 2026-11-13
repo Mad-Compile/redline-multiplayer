@@ -37,3 +37,37 @@ z_index = 20
 [node name="Gameplay" type="Node2D" parent="."]
 
 [node name="MapMarkers" type="Node2D" parent="Gameplay"]
+
+[node name="GroundDecals" type="TileMapLayer" parent="Layers"]
+z_index = -5
+y_sort_enabled = true
+tile_set = ExtResource("2_iso_tileset")
+
+[node name="RailInfrastructure" type="Node2D" parent="Layers"]
+y_sort_enabled = true
+
+[node name="Architecture" type="Node2D" parent="Layers/WorldStructures"]
+y_sort_enabled = true
+
+[node name="IndustrialStructures" type="Node2D" parent="Layers/WorldStructures"]
+y_sort_enabled = true
+
+[node name="Vegetation" type="Node2D" parent="Layers/WorldProps"]
+y_sort_enabled = true
+
+[node name="SetDressing" type="Node2D" parent="Layers/WorldProps"]
+y_sort_enabled = true
+
+[node name="ForegroundOccluders" type="Node2D" parent="Layers/Overhead"]
+z_index = 20
+y_sort_enabled = true
+
+[node name="Collision" type="Node2D" parent="Gameplay"]
+
+[node name="Navigation" type="Node2D" parent="Gameplay"]
+
+[node name="LootSockets" type="Node2D" parent="Gameplay"]
+
+[node name="ObjectiveVolumes" type="Node2D" parent="Gameplay"]
+
+[node name="SpawnVolumes" type="Node2D" parent="Gameplay"]
