@@ -1,6 +1,6 @@
 extends Node2D
 ## Terminal 09 is the first REDLINE map blockout.
-## The coloured overlay is a development aid; it is not final environment art.
+## Procedural terrain and structure guides are greybox composition aids, not final environment art.
 
 const GRID_SIZE := Vector2i(36, 24)
 const TILE_SIZE := Vector2i(128, 64)
