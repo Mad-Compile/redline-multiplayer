@@ -87,4 +87,32 @@ Ground tiles will use the isometric TileSet. Larger buildings, trees, machinery,
 6. Add prop dressing, interaction points, randomized loot sockets, lights, weather, and ambience.
 7. Test sight lines, escape routes, breach balance, readability, and mobile frame time.
 
-The current scene intentionally contains no finished placeholder artwork. The coloured overlay is only a layout/debug aid.
+## Expanded visual blockout pass
+
+The map script now draws a deterministic procedural ground pass across all 864 isometric cells, with muted terrain variation, concrete/gravel sector palettes, service-route slabs, four parallel rail lines with sleepers, a short siding, raised platform/building footprints, freight-container silhouettes, and scattered crate silhouettes. The original sector and objective overlays remain available as debug information.
+
+These shapes are composition and scale guides only. They are not final tile textures, final props, collision geometry, or navigable building interiors. The TileMapLayer nodes remain prepared for a later texture-backed atlas. Do not mistake the procedural drawing pass for finished art or functional collision.
+
+## Tile and environment asset plan
+
+The eventual environment atlas should be split into coherent families rather than one giant sheet:
+
+- Ground: worn concrete, ballast/gravel, cracked asphalt, drainage mud, wet patches, grass margins, oil stains, painted safety markings.
+- Rail: straight, curved, junction, switch, buffer stop, crossing, sleepers, rail-bed transitions and platform edges.
+- Structural: concrete walls, chain-link fences, gates, retaining walls, stairs, ramps, door frames, roof edges and canopy pieces.
+- Industrial: generator shed modules, cable trays, transformers, fuel storage, loading dock, signal cabinets, trackside electrical boxes.
+- Platform: platform top/edge/corner pieces, canopy supports, benches, lamps, signs, ticket booth and train boarding edge.
+- Set dressing: freight containers, pallets, crates, barrels, sandbags, road barriers, cable drums, abandoned luggage, broken signage and litter.
+- Outbreak storytelling: quarantine tape, temporary checkpoints, medical waste bins, emergency lights, evacuation notices, abandoned response equipment and restrained blood traces.
+
+Every tile family needs matching edge/corner transitions. Large structures should remain separate scene assets with explicit pivots, Y-sort origins, collision and occlusion rather than being flattened into the ground atlas.
+
+## Next implementation gates
+
+1. Replace the procedural ground guide with a texture-backed atlas and painted TileMapLayer cells.
+2. Build modular building scenes with accessible interiors and roof/occlusion variants.
+3. Add collision polygons and navigation only after the walkable art geometry is stable.
+4. Add loot sockets, objective interaction volumes, spawn safety checks and extraction boarding bounds.
+5. Run Godot import and scene validation; then capture an in-engine map review before calling the blockout complete.
+
+The current scene intentionally uses procedural guide geometry rather than pretending unmade environment art exists.
