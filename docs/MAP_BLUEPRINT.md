@@ -73,6 +73,8 @@ The Godot scene is separated into:
 7. Lighting.
 8. Gameplay markers and invisible gameplay geometry.
 
+The scene tree also reserves separate sublayers for rail infrastructure, architecture, industrial structures, vegetation, set dressing, foreground occluders, collision, navigation, loot sockets, objective volumes and spawn volumes. These are organizational foundations; empty nodes do not imply those systems are implemented.
+
 The environment can mix detailed painted/high-resolution textures with selected HD pixel-art elements. Pixel treatment is an art choice per asset, not a blanket filter applied to the whole world.
 
 Ground tiles will use the isometric TileSet. Larger buildings, trees, machinery, vehicles, and foreground pieces should be independent scene/sprite assets so their pivots, Y-sort origin, collision shapes, and occluders can be tuned individually.
