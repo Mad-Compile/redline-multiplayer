@@ -108,8 +108,12 @@ jobs:
           test -s "$APK"
           APP_ID="$(apkanalyzer manifest application-id "$APK")"
           test "$APP_ID" = "com.madcompile.redline"
-          apkanalyzer manifest permissions "$APK" | grep -Fx "android.permission.INTERNET"
-          unzip -Z1 "$APK" | grep -q '^lib/arm64-v8a/'
+          APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+          unzip -Z1 "$APK" > "$RUNNER_TEMP/apk-files.txt"
+          grep -q '^lib/arm64-v8a/' "$RUNNER_TEMP/apk-files.txt"
+          grep -Fq 'permissions/internet=true' export_presets.cfg
           echo "APK_SIZE_BYTES=$(stat -c '%s' "$APK")" >> "$GITHUB_ENV"
 
       - name: Upload Android debug APK
