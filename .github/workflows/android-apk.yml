@@ -1,0 +1,133 @@
+name: REDLINE Android APK
+
+on:
+  push:
+    branches:
+      - prototype/v0.5.0-android-practice
+    paths:
+      - build-input/REDLINE_v0.5.0_GitHub_Actions_Build_Source.zip
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out build branch
+        uses: actions/checkout@v4
+
+      - name: Confirm source archive is present
+        run: |
+          test -s build-input/REDLINE_v0.5.0_GitHub_Actions_Build_Source.zip
+          mkdir -p "$RUNNER_TEMP/redline-project"
+          unzip -q build-input/REDLINE_v0.5.0_GitHub_Actions_Build_Source.zip -d "$RUNNER_TEMP/redline-project"
+          test -f "$RUNNER_TEMP/redline-project/project.godot"
+          echo "PROJECT_DIR=$RUNNER_TEMP/redline-project" >> "$GITHUB_ENV"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.1" \
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;28.1.13356709"
+
+      - name: Set up Node.js and test room signalling service
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install signalling dependencies and run tests
+        working-directory: ${{ env.PROJECT_DIR }}/services/signalling
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+
+      - name: Download Godot 4.7.2 and matching export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT_DIR="$RUNNER_TEMP/godot"
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          mkdir -p "$GODOT_DIR" "$TEMPLATE_DIR"
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" \
+            --output "$GODOT_DIR/godot.zip"
+          unzip -q "$GODOT_DIR/godot.zip" -d "$GODOT_DIR"
+          chmod +x "$GODOT_DIR/Godot_v4.7.2-stable_linux.x86_64"
+          ln -sf "$GODOT_DIR/Godot_v4.7.2-stable_linux.x86_64" "$GODOT_DIR/godot"
+          echo "$GODOT_DIR" >> "$GITHUB_PATH"
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" \
+            --output "$GODOT_DIR/templates.tpz"
+          mkdir -p "$GODOT_DIR/templates"
+          unzip -q "$GODOT_DIR/templates.tpz" -d "$GODOT_DIR/templates"
+          if [ -d "$GODOT_DIR/templates/templates" ]; then
+            cp -a "$GODOT_DIR/templates/templates/." "$TEMPLATE_DIR/"
+          else
+            cp -a "$GODOT_DIR/templates/." "$TEMPLATE_DIR/"
+          fi
+          echo "GODOT_BIN=$GODOT_DIR/Godot_v4.7.2-stable_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Install pinned WebRTC Native extension
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: ./scripts/install_webrtc_native.sh
+
+      - name: Configure Godot Android SDK paths
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF2
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "${ANDROID_SDK_ROOT}"
+          export/android/java_sdk_path = "${JAVA_HOME}"
+          EOF2
+
+      - name: Validate REDLINE resources and Practice integration
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: python3 scripts/validate_static.py
+
+      - name: Import resources and parse GDScript
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: '"$GODOT_BIN" --headless --editor --path . --quit'
+
+      - name: Run headless scene smoke test
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: '"$GODOT_BIN" --headless --path . --quit-after 5'
+
+      - name: Export Android arm64 debug APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: ./scripts/export_android.sh
+
+      - name: Verify exported APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          APK="build/REDLINE_Terminal09_v0.5.0_debug.apk"
+          test -s "$APK"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.1/aapt" dump badging "$APK" | grep -F "package: name='com.madcompile.redline'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.1/aapt" dump permissions "$APK" | grep -F 'android.permission.INTERNET'
+          unzip -l "$APK" | grep -E 'libwebrtc_native.android.template_(debug|release).arm64.so'
+
+      - name: Upload installable Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: REDLINE-Terminal09-Android-v0.5.0-debug
+          path: ${{ env.PROJECT_DIR }}/build/REDLINE_Terminal09_v0.5.0_debug.apk
+          if-no-files-found: error
+          retention-days: 14
