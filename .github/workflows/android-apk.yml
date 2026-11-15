@@ -9,6 +9,7 @@ on:
       - ".github/workflows/android-apk.yml"
       - "project.godot"
       - "export_presets.cfg"
+      - "assets/**"
       - "scenes/**"
       - "scripts/**"
       - "resources/**"
