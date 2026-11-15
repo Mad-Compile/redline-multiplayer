@@ -1,9 +1,10 @@
-name: REDLINE Android APK (map source branch)
+name: REDLINE Android APK (asymmetric arena)
 
 on:
   push:
     branches:
       - map/rail-yard-foundation
+      - map/asymmetric-team-map-repair
     paths:
       - ".github/workflows/android-apk.yml"
       - "project.godot"
@@ -50,7 +51,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          GODOT_VERSION="4.7.2"
           GODOT_DIR="$RUNNER_TEMP/godot"
           TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.7.2.stable"
           mkdir -p "$GODOT_DIR" "$TEMPLATE_DIR"
@@ -89,7 +89,7 @@ jobs:
       - name: Import resources and parse project
         run: '"$GODOT_BIN" --headless --editor --path . --quit'
 
-      - name: Smoke test the main scene
+      - name: Smoke test the active arena
         run: '"$GODOT_BIN" --headless --path . --quit-after 5'
 
       - name: Export arm64 Android debug APK
@@ -98,13 +98,13 @@ jobs:
           set -euo pipefail
           mkdir -p build
           "$GODOT_BIN" --headless --path . --export-debug \
-            "Android Debug APK" build/REDLINE_Terminal09_v0.1.0_debug.apk
+            "Android Debug APK" build/REDLINE_AsymmetricArena_v0.1.0_debug.apk
 
       - name: Verify APK package and permissions
         shell: bash
         run: |
           set -euo pipefail
-          APK="build/REDLINE_Terminal09_v0.1.0_debug.apk"
+          APK="build/REDLINE_AsymmetricArena_v0.1.0_debug.apk"
           test -s "$APK"
           APP_ID="$(apkanalyzer manifest application-id "$APK")"
           test "$APP_ID" = "com.madcompile.redline"
@@ -119,7 +119,7 @@ jobs:
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: REDLINE-Terminal09-MapFoundation-Android-Debug
-          path: build/REDLINE_Terminal09_v0.1.0_debug.apk
+          name: REDLINE-AsymmetricArena-Android-Debug
+          path: build/REDLINE_AsymmetricArena_v0.1.0_debug.apk
           if-no-files-found: error
           retention-days: 14
