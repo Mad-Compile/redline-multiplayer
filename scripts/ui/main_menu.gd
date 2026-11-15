@@ -25,10 +25,23 @@ func _exit_tree() -> void:
 		_menu_archive.close()
 
 func _load_menu_archive() -> void:
+	# ZIPReader opens filesystem paths, not res:// PCK resources. Copy the bundled
+	# archive from the exported pack into user:// first so this works on Android.
+	var archive_bytes := FileAccess.get_file_as_bytes(MENU_ASSET_ARCHIVE)
+	if archive_bytes.is_empty():
+		push_error("REDLINE menu: bundled menu_art.zip is missing or empty.")
+		return
+	var temp_path := "user://redline_menu_art.zip"
+	var output := FileAccess.open(temp_path, FileAccess.WRITE)
+	if output == null:
+		push_error("REDLINE menu: could not stage menu artwork archive in app storage.")
+		return
+	output.store_buffer(archive_bytes)
+	output.close()
 	_menu_archive = ZIPReader.new()
-	var error := _menu_archive.open(MENU_ASSET_ARCHIVE)
+	var error := _menu_archive.open(ProjectSettings.globalize_path(temp_path))
 	if error != OK:
-		push_error("REDLINE menu: unable to open supplied menu artwork archive: %s" % error)
+		push_error("REDLINE menu: staged artwork archive could not be opened: %s" % error)
 		_menu_archive = null
 
 func _load_menu_texture(file_name: String) -> Texture2D:
@@ -50,7 +63,7 @@ func _build_background() -> void:
 	_background.name = "Terminal09Background"
 	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_background.stretch_mode = TextureRect.STRETCH_SCALE
 	_background.texture = _load_menu_texture("menu_background.webp")
 	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_background)
