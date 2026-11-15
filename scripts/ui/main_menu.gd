@@ -2,7 +2,7 @@ extends Control
 ## REDLINE home menu. Artwork is a verified, directly bundled WebP texture split
 ## into binary resource chunks so Android can load it without ZIP filesystem APIs.
 
-const MENU_ART_PARTS := 20
+const MENU_ART_PARTS := 12
 
 var _background: TextureRect
 var _practice_button: Button
