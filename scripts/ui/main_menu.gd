@@ -1,117 +1,81 @@
 extends Control
-## REDLINE's Android-first home menu. The supplied button artwork and background
-## are bundled in one ZIP so Godot can load them without replacing the source art.
+## REDLINE home menu. Artwork is a verified, directly bundled WebP texture split
+## into binary resource chunks so Android can load it without ZIP filesystem APIs.
 
-const MENU_ASSET_ARCHIVE := "res://assets/menu/menu_art.zip"
+const MENU_ART_PARTS := 20
 
-var _menu_archive: ZIPReader
 var _background: TextureRect
-var _practice_button: BaseButton
-var _match_button: BaseButton
-var _settings_button: BaseButton
+var _practice_button: Button
+var _match_button: Button
+var _settings_button: Button
 var _overlay: ColorRect
 var _overlay_panel: PanelContainer
 
 func _ready() -> void:
-	_load_menu_archive()
 	_build_background()
 	_build_menu_buttons()
 	_build_overlay()
 	_layout()
 	get_viewport().size_changed.connect(_layout)
 
-func _exit_tree() -> void:
-	if _menu_archive != null:
-		_menu_archive.close()
-
-func _load_menu_archive() -> void:
-	# ZIPReader opens filesystem paths, not res:// PCK resources. Copy the bundled
-	# archive from the exported pack into user:// first so this works on Android.
-	var archive_bytes := FileAccess.get_file_as_bytes(MENU_ASSET_ARCHIVE)
-	if archive_bytes.is_empty():
-		push_error("REDLINE menu: bundled menu_art.zip is missing or empty.")
-		return
-	var temp_path := "user://redline_menu_art.zip"
-	var output := FileAccess.open(temp_path, FileAccess.WRITE)
-	if output == null:
-		push_error("REDLINE menu: could not stage menu artwork archive in app storage.")
-		return
-	output.store_buffer(archive_bytes)
-	output.close()
-	_menu_archive = ZIPReader.new()
-	var error := _menu_archive.open(ProjectSettings.globalize_path(temp_path))
-	if error != OK:
-		push_error("REDLINE menu: staged artwork archive could not be opened: %s" % error)
-		_menu_archive = null
-
-func _load_menu_texture(file_name: String) -> Texture2D:
-	if _menu_archive == null:
-		return null
-	var bytes := _menu_archive.read_file("assets/menu/" + file_name)
-	if bytes.is_empty():
-		push_error("REDLINE menu: missing artwork inside menu_art.zip: " + file_name)
-		return null
+func _load_menu_texture() -> Texture2D:
+	var image_bytes := PackedByteArray()
+	for part_index in range(MENU_ART_PARTS):
+		var path := "res://assets/menu/menu_art_%02d.dat" % part_index
+		var part_bytes := FileAccess.get_file_as_bytes(path)
+		if part_bytes.is_empty():
+			push_error("REDLINE menu: missing bundled art chunk: " + path)
+			return null
+		image_bytes.append_array(part_bytes)
 	var image := Image.new()
-	var error := image.load_webp_from_buffer(bytes)
+	var error := image.load_webp_from_buffer(image_bytes)
 	if error != OK:
-		push_error("REDLINE menu: could not decode %s (error %s)" % [file_name, error])
+		push_error("REDLINE menu: bundled WebP could not be decoded (error %s)." % error)
 		return null
 	return ImageTexture.create_from_image(image)
 
 func _build_background() -> void:
 	_background = TextureRect.new()
-	_background.name = "Terminal09Background"
+	_background.name = "Terminal09MenuArtwork"
 	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_background.stretch_mode = TextureRect.STRETCH_SCALE
-	_background.texture = _load_menu_texture("menu_background.webp")
+	_background.texture = _load_menu_texture()
 	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_background)
 	move_child(_background, 0)
 
-func _build_menu_buttons() -> void:
-	_practice_button = _make_art_button("PRACTICE", "practice_button.webp")
-	_practice_button.pressed.connect(_on_practice)
-	add_child(_practice_button)
-
-	_match_button = _make_art_button("START MATCH", "start_match_button.webp")
-	_match_button.pressed.connect(_on_start_match)
-	add_child(_match_button)
-
-	_settings_button = _make_art_button("SETTINGS", "settings_button.webp")
-	_settings_button.pressed.connect(_on_settings)
-	add_child(_settings_button)
-
-func _make_art_button(label: String, image_name: String) -> BaseButton:
-	var texture := _load_menu_texture(image_name)
-	var button: BaseButton
-	if texture != null:
-		var art_button := TextureButton.new()
-		art_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		art_button.ignore_texture_size = true
-		art_button.texture_normal = texture
-		art_button.texture_hover = texture
-		art_button.texture_pressed = texture
-		art_button.texture_focused = texture
-		button = art_button
-	else:
-		var fallback := Button.new()
-		fallback.text = label
-		fallback.add_theme_font_size_override("font_size", 26)
-		fallback.add_theme_color_override("font_color", Color(0.96, 0.86, 0.68))
-		var normal := StyleBoxFlat.new()
-		normal.bg_color = Color(0.12, 0.075, 0.045, 0.96)
-		normal.border_color = Color(0.76, 0.27, 0.10)
-		normal.set_border_width_all(3)
-		fallback.add_theme_stylebox_override("normal", normal)
-		button = fallback
-
-	button.name = label.replace(" ", "").capitalize() + "Button"
+func _make_hotspot(label: String) -> Button:
+	var button := Button.new()
+	button.name = label.replace(" ", "") + "HitArea"
+	button.text = ""
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.mouse_entered.connect(func() -> void: button.modulate = Color(1.16, 1.08, 0.94, 1.0))
-	button.mouse_exited.connect(func() -> void: button.modulate = Color.WHITE)
+	var normal := StyleBoxEmpty.new()
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = Color(1.0, 0.44, 0.12, 0.09)
+	hover.border_color = Color(1.0, 0.42, 0.12, 0.92)
+	hover.set_border_width_all(2)
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = Color(1.0, 0.30, 0.08, 0.22)
+	pressed.border_color = Color(1.0, 0.58, 0.25, 1.0)
+	pressed.set_border_width_all(3)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("focus", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", pressed)
 	return button
+
+func _build_menu_buttons() -> void:
+	_practice_button = _make_hotspot("Practice")
+	_practice_button.pressed.connect(_on_practice)
+	add_child(_practice_button)
+	_match_button = _make_hotspot("Start Match")
+	_match_button.pressed.connect(_on_start_match)
+	add_child(_match_button)
+	_settings_button = _make_hotspot("Settings")
+	_settings_button.pressed.connect(_on_settings)
+	add_child(_settings_button)
 
 func _build_overlay() -> void:
 	_overlay = ColorRect.new()
@@ -121,7 +85,6 @@ func _build_overlay() -> void:
 	_overlay.visible = false
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_overlay)
-
 	_overlay_panel = PanelContainer.new()
 	_overlay_panel.name = "IndustrialDialog"
 	var panel_style := StyleBoxFlat.new()
@@ -140,16 +103,15 @@ func _layout() -> void:
 	if not is_inside_tree() or _practice_button == null:
 		return
 	var viewport_size := get_viewport_rect().size
-	var scale_factor := minf(viewport_size.x / 1600.0, viewport_size.y / 900.0)
-	var right_edge := viewport_size.x - 48.0 * scale_factor
-
-	_practice_button.size = Vector2(560, 167) * scale_factor
-	_practice_button.position = Vector2(right_edge - _practice_button.size.x, 175.0 * scale_factor)
-	_match_button.size = Vector2(650, 129) * scale_factor
-	_match_button.position = Vector2(right_edge - _match_button.size.x, 382.0 * scale_factor)
-	_settings_button.size = Vector2(560, 173) * scale_factor
-	_settings_button.position = Vector2(right_edge - _settings_button.size.x, 568.0 * scale_factor)
-
+	var sx := viewport_size.x / 1600.0
+	var sy := viewport_size.y / 900.0
+	_practice_button.position = Vector2(965.0 * sx, 172.0 * sy)
+	_practice_button.size = Vector2(526.0 * sx, 157.0 * sy)
+	_match_button.position = Vector2(830.0 * sx, 355.0 * sy)
+	_match_button.size = Vector2(699.0 * sx, 139.0 * sy)
+	_settings_button.position = Vector2(965.0 * sx, 560.0 * sy)
+	_settings_button.size = Vector2(540.0 * sx, 167.0 * sy)
+	var scale_factor := minf(sx, sy)
 	var panel_size := Vector2(680, 390) * scale_factor
 	_overlay_panel.custom_minimum_size = panel_size
 	_overlay_panel.size = panel_size
@@ -158,14 +120,14 @@ func _layout() -> void:
 func _on_practice() -> void:
 	_show_message(
 		"PRACTICE MODE IN DEVELOPMENT",
-		"The Terminal 09 arena layout is being connected to player movement, character art and interactive objectives. Practice will open when that space is playable.",
+		"Terminal 09 is being connected to player movement, character animations and interactive objectives. Practice will open when that space is playable.",
 		"BACK"
 	)
 
 func _on_start_match() -> void:
 	_show_message(
 		"MULTIPLAYER CONNECTION",
-		"The peer-to-peer engine is being developed separately. The REDLINE lobby will connect to it when its integration interface is available.",
+		"The peer-to-peer engine is being developed separately. The REDLINE lobby will connect when its integration interface is available.",
 		"BACK"
 	)
 
@@ -190,11 +152,9 @@ func _show_settings() -> void:
 	_show_overlay()
 	var column := _new_overlay_column()
 	_add_overlay_title(column, "FIELD SETTINGS")
-
 	var volume_label := Label.new()
 	volume_label.text = "MASTER VOLUME"
 	column.add_child(volume_label)
-
 	var volume := HSlider.new()
 	volume.min_value = 0.0
 	volume.max_value = 1.0
@@ -204,7 +164,6 @@ func _show_settings() -> void:
 		AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001)))
 	)
 	column.add_child(volume)
-
 	var fullscreen := CheckButton.new()
 	fullscreen.text = "FULLSCREEN"
 	fullscreen.button_pressed = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
