@@ -1,110 +1,160 @@
 extends Control
-## REDLINE home menu. Production button art is loaded from res://assets/menu/.
-## If an art file is absent, the menu remains navigable and reports the missing asset.
+## REDLINE's Android-first home menu. The supplied button artwork and background
+## are bundled in one ZIP so Godot can load them without replacing the source art.
 
-const ARENA_SCENE := "res://scenes/maps/asymmetric_arena/asymmetric_arena_map.tscn"
-const BG_PATH := "res://assets/menu/menu_background.webp"
-const PRACTICE_PATH := "res://assets/menu/practice_button.webp"
-const MATCH_PATH := "res://assets/menu/start_match_button.webp"
-const SETTINGS_PATH := "res://assets/menu/settings_button.webp"
+const MENU_ASSET_ARCHIVE := "res://assets/menu/menu_art.zip"
 
-var background: TextureRect
-var practice_button: TextureButton
-var match_button: TextureButton
-var settings_button: TextureButton
-var overlay: ColorRect
-var overlay_panel: PanelContainer
-var missing_assets: Array[String] = []
+var _menu_archive: ZIPReader
+var _background: TextureRect
+var _practice_button: BaseButton
+var _match_button: BaseButton
+var _settings_button: BaseButton
+var _overlay: ColorRect
+var _overlay_panel: PanelContainer
 
 func _ready() -> void:
+	_load_menu_archive()
 	_build_background()
 	_build_menu_buttons()
 	_build_overlay()
 	_layout()
 	get_viewport().size_changed.connect(_layout)
 
+func _exit_tree() -> void:
+	if _menu_archive != null:
+		_menu_archive.close()
+
+func _load_menu_archive() -> void:
+	_menu_archive = ZIPReader.new()
+	var error := _menu_archive.open(MENU_ASSET_ARCHIVE)
+	if error != OK:
+		push_error("REDLINE menu: unable to open supplied menu artwork archive: %s" % error)
+		_menu_archive = null
+
+func _load_menu_texture(file_name: String) -> Texture2D:
+	if _menu_archive == null:
+		return null
+	var bytes := _menu_archive.read_file("assets/menu/" + file_name)
+	if bytes.is_empty():
+		push_error("REDLINE menu: missing artwork inside menu_art.zip: " + file_name)
+		return null
+	var image := Image.new()
+	var error := image.load_webp_from_buffer(bytes)
+	if error != OK:
+		push_error("REDLINE menu: could not decode %s (error %s)" % [file_name, error])
+		return null
+	return ImageTexture.create_from_image(image)
+
 func _build_background() -> void:
-	background = TextureRect.new()
-	background.name = "Terminal09Background"
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	var texture := load(BG_PATH) as Texture2D
-	if texture:
-		background.texture = texture
-	else:
-		missing_assets.append(BG_PATH)
-		background.modulate = Color(0.10, 0.12, 0.13)
-	add_child(background)
-	move_child(background, 0)
+	_background = TextureRect.new()
+	_background.name = "Terminal09Background"
+	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_background.texture = _load_menu_texture("menu_background.webp")
+	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_background)
+	move_child(_background, 0)
 
 func _build_menu_buttons() -> void:
-	practice_button = _make_art_button("Practice", PRACTICE_PATH)
-	practice_button.pressed.connect(_on_practice)
-	add_child(practice_button)
-	match_button = _make_art_button("Start Match", MATCH_PATH)
-	match_button.pressed.connect(_on_start_match)
-	add_child(match_button)
-	settings_button = _make_art_button("Settings", SETTINGS_PATH)
-	settings_button.pressed.connect(_on_settings)
-	add_child(settings_button)
+	_practice_button = _make_art_button("PRACTICE", "practice_button.webp")
+	_practice_button.pressed.connect(_on_practice)
+	add_child(_practice_button)
 
-func _make_art_button(label: String, path: String) -> TextureButton:
-	var button := TextureButton.new()
-	button.name = label.replace(" ", "") + "Button"
-	button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	button.ignore_texture_size = true
-	button.focus_mode = Control.FOCUS_ALL
-	var texture := load(path) as Texture2D
-	if texture:
-		button.texture_normal = texture
-		button.texture_hover = texture
-		button.texture_pressed = texture
+	_match_button = _make_art_button("START MATCH", "start_match_button.webp")
+	_match_button.pressed.connect(_on_start_match)
+	add_child(_match_button)
+
+	_settings_button = _make_art_button("SETTINGS", "settings_button.webp")
+	_settings_button.pressed.connect(_on_settings)
+	add_child(_settings_button)
+
+func _make_art_button(label: String, image_name: String) -> BaseButton:
+	var texture := _load_menu_texture(image_name)
+	var button: BaseButton
+	if texture != null:
+		var art_button := TextureButton.new()
+		art_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		art_button.ignore_texture_size = true
+		art_button.texture_normal = texture
+		art_button.texture_hover = texture
+		art_button.texture_pressed = texture
+		art_button.texture_focused = texture
+		button = art_button
 	else:
-		missing_assets.append(path)
 		var fallback := Button.new()
-		fallback.text = label.to_upper()
-		fallback.add_theme_font_size_override("font_size", 30)
-		fallback.add_theme_color_override("font_color", Color(0.94, 0.88, 0.76))
-		fallback.add_theme_color_override("font_hover_color", Color.WHITE)
-		fallback.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		button.add_child(fallback)
-		fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fallback.text = label
+		fallback.add_theme_font_size_override("font_size", 26)
+		fallback.add_theme_color_override("font_color", Color(0.96, 0.86, 0.68))
+		var normal := StyleBoxFlat.new()
+		normal.bg_color = Color(0.12, 0.075, 0.045, 0.96)
+		normal.border_color = Color(0.76, 0.27, 0.10)
+		normal.set_border_width_all(3)
+		fallback.add_theme_stylebox_override("normal", normal)
+		button = fallback
+
+	button.name = label.replace(" ", "").capitalize() + "Button"
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.mouse_entered.connect(func() -> void: button.modulate = Color(1.16, 1.08, 0.94, 1.0))
+	button.mouse_exited.connect(func() -> void: button.modulate = Color.WHITE)
 	return button
 
 func _build_overlay() -> void:
-	overlay = ColorRect.new()
-	overlay.name = "MenuOverlay"
-	overlay.color = Color(0.015, 0.02, 0.025, 0.88)
-	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.visible = false
-	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(overlay)
-	overlay_panel = PanelContainer.new()
-	overlay_panel.position = Vector2(460, 250)
-	overlay_panel.custom_minimum_size = Vector2(680, 400)
-	overlay_panel.size = Vector2(680, 400)
-	overlay.add_child(overlay_panel)
+	_overlay = ColorRect.new()
+	_overlay.name = "MenuOverlay"
+	_overlay.color = Color(0.012, 0.016, 0.019, 0.91)
+	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.visible = false
+	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_overlay)
+
+	_overlay_panel = PanelContainer.new()
+	_overlay_panel.name = "IndustrialDialog"
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.055, 0.061, 0.061, 0.99)
+	panel_style.border_color = Color(0.69, 0.25, 0.11, 1.0)
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(3)
+	panel_style.content_margin_left = 34
+	panel_style.content_margin_right = 34
+	panel_style.content_margin_top = 30
+	panel_style.content_margin_bottom = 30
+	_overlay_panel.add_theme_stylebox_override("panel", panel_style)
+	_overlay.add_child(_overlay_panel)
 
 func _layout() -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or _practice_button == null:
 		return
 	var viewport_size := get_viewport_rect().size
 	var scale_factor := minf(viewport_size.x / 1600.0, viewport_size.y / 900.0)
-	var right_edge := viewport_size.x - 54.0 * scale_factor
-	practice_button.size = Vector2(590, 176) * scale_factor
-	practice_button.position = Vector2(right_edge - practice_button.size.x, 160.0 * scale_factor)
-	match_button.size = Vector2(690, 137) * scale_factor
-	match_button.position = Vector2(right_edge - match_button.size.x, 355.0 * scale_factor)
-	settings_button.size = Vector2(590, 182) * scale_factor
-	settings_button.position = Vector2(right_edge - settings_button.size.x, 525.0 * scale_factor)
-	overlay_panel.position = viewport_size * 0.5 - overlay_panel.size * 0.5
+	var right_edge := viewport_size.x - 48.0 * scale_factor
+
+	_practice_button.size = Vector2(560, 167) * scale_factor
+	_practice_button.position = Vector2(right_edge - _practice_button.size.x, 175.0 * scale_factor)
+	_match_button.size = Vector2(650, 129) * scale_factor
+	_match_button.position = Vector2(right_edge - _match_button.size.x, 382.0 * scale_factor)
+	_settings_button.size = Vector2(560, 173) * scale_factor
+	_settings_button.position = Vector2(right_edge - _settings_button.size.x, 568.0 * scale_factor)
+
+	var panel_size := Vector2(680, 390) * scale_factor
+	_overlay_panel.custom_minimum_size = panel_size
+	_overlay_panel.size = panel_size
+	_overlay_panel.position = viewport_size * 0.5 - panel_size * 0.5
 
 func _on_practice() -> void:
-	get_tree().change_scene_to_file(ARENA_SCENE)
+	_show_message(
+		"PRACTICE MODE IN DEVELOPMENT",
+		"The Terminal 09 arena layout is being connected to player movement, character art and interactive objectives. Practice will open when that space is playable.",
+		"BACK"
+	)
 
 func _on_start_match() -> void:
-	_show_message("ONLINE MATCH UNAVAILABLE", "The P2P engine is being developed separately. REDLINE will connect to it when its integration package is ready.", "BACK")
+	_show_message(
+		"MULTIPLAYER CONNECTION",
+		"The peer-to-peer engine is being developed separately. The REDLINE lobby will connect to it when its integration interface is available.",
+		"BACK"
+	)
 
 func _on_settings() -> void:
 	_show_settings()
@@ -116,7 +166,10 @@ func _show_message(title_text: String, body_text: String, button_text: String) -
 	var body := Label.new()
 	body.text = body_text
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.custom_minimum_size = Vector2(560, 100)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.custom_minimum_size = Vector2(0, 110)
+	body.add_theme_font_size_override("font_size", 19)
+	body.add_theme_color_override("font_color", Color(0.82, 0.83, 0.79))
 	column.add_child(body)
 	_add_overlay_back(column, button_text)
 
@@ -124,9 +177,11 @@ func _show_settings() -> void:
 	_show_overlay()
 	var column := _new_overlay_column()
 	_add_overlay_title(column, "FIELD SETTINGS")
+
 	var volume_label := Label.new()
 	volume_label.text = "MASTER VOLUME"
 	column.add_child(volume_label)
+
 	var volume := HSlider.new()
 	volume.min_value = 0.0
 	volume.max_value = 1.0
@@ -136,40 +191,51 @@ func _show_settings() -> void:
 		AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value, 0.001)))
 	)
 	column.add_child(volume)
+
 	var fullscreen := CheckButton.new()
 	fullscreen.text = "FULLSCREEN"
 	fullscreen.button_pressed = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	fullscreen.toggled.connect(func(enabled: bool) -> void:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_mode(
+			DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED
+		)
 	)
 	column.add_child(fullscreen)
 	_add_overlay_back(column, "BACK")
 
 func _show_overlay() -> void:
-	for child in overlay_panel.get_children():
+	for child in _overlay_panel.get_children():
+		_overlay_panel.remove_child(child)
 		child.queue_free()
-	overlay.visible = true
+	_overlay.visible = true
 	_layout()
 
 func _new_overlay_column() -> VBoxContainer:
 	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 22)
-	overlay_panel.add_child(column)
+	_overlay_panel.add_child(column)
 	return column
 
 func _add_overlay_title(parent: VBoxContainer, title_text: String) -> void:
 	var title := Label.new()
 	title.text = title_text
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size",  thirty_two())
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.add_theme_font_size_override("font_size", 27)
+	title.add_theme_color_override("font_color", Color(0.91, 0.72, 0.48))
 	parent.add_child(title)
-
-func thirty_two() -> int:
-	return 32
 
 func _add_overlay_back(parent: VBoxContainer, button_text: String) -> void:
 	var back := Button.new()
 	back.text = button_text
-	back.custom_minimum_size = Vector2(0, 58)
-	back.pressed.connect(func() -> void: overlay.visible = false)
+	back.custom_minimum_size = Vector2(0, 54)
+	back.add_theme_font_size_override("font_size", 20)
+	back.pressed.connect(func() -> void: _overlay.visible = false)
 	parent.add_child(back)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _overlay != null and _overlay.visible and event.is_action_pressed("ui_cancel"):
+		_overlay.visible = false
+		get_viewport().set_input_as_handled()
