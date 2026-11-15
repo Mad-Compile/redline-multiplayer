@@ -82,6 +82,7 @@ func _build_overlay() -> void:
 	add_child(overlay)
 	overlay_panel = PanelContainer.new()
 	overlay_panel.position = Vector2(460, 250)
+	overlay_panel.custom_minimum_size = Vector2(680, 400)
 	overlay_panel.size = Vector2(680, 400)
 	overlay.add_child(overlay_panel)
 
