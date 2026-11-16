@@ -12,3 +12,17 @@ Thumbs.db
 # Local Android signing material
 *.keystore
 *.jks
+
+# Python / Kivy development
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.kivy/
+
+# Buildozer / Android build outputs
+.buildozer/
+.buildozer-global/
+bin/
+*.apk
+*.aab
