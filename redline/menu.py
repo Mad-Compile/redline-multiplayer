@@ -1,7 +1,9 @@
-"""REDLINE menu using the original supplied menu artwork archive.
+"""REDLINE menu built with the intact original button artwork.
 
-The archive is preserved unchanged. Its four WebP files are decoded to PNG in
-Kivy's writable app-data directory because Android asset paths are read-only.
+The historical ZIP is preserved unchanged. It was truncated during upload:
+the three button images are complete, but the background image and ZIP
+directory are missing. A repaired ZIP contains only the three recovered
+button files. The menu explicitly marks its temporary plain background.
 """
 from __future__ import annotations
 
@@ -12,18 +14,18 @@ from zipfile import ZipFile
 from PIL import Image as PILImage
 from kivy.app import App
 from kivy.core.audio import SoundLoader
+from kivy.graphics import Color, Rectangle
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.slider import Slider
-from kivy.uix.floatlayout import FloatLayout
 
 
 ARTWORK = {
-    "background": "assets/menu/menu_background.webp",
     "practice": "assets/menu/practice_button.webp",
     "match": "assets/menu/start_match_button.webp",
     "settings": "assets/menu/settings_button.webp",
@@ -51,10 +53,10 @@ class MainMenu(FloatLayout):
 
     def _prepare_artwork(self):
         project_root = Path(__file__).resolve().parents[1]
-        archive_path = project_root / "assets" / "menu" / "menu_art.zip"
+        archive_path = project_root / "assets" / "menu" / "menu_buttons_recovered.zip"
         if not archive_path.is_file():
             raise FileNotFoundError(
-                "Supplied REDLINE menu archive is missing: " + str(archive_path)
+                "Recovered original REDLINE menu buttons are missing: " + str(archive_path)
             )
 
         output_dir = Path(App.get_running_app().user_data_dir) / "menu_art"
@@ -70,15 +72,22 @@ class MainMenu(FloatLayout):
         return paths
 
     def _build_menu(self):
-        background = Image(
-            source=self._art_paths["background"],
-            fit_mode="fill",
-            size_hint=(1, 1),
-            pos_hint={"x": 0, "y": 0},
-        )
-        self.add_widget(background)
+        self._background_color = Color(0.035, 0.047, 0.055, 1)
+        self._background_rect = Rectangle(pos=self.pos, size=self.size)
+        self.canvas.before.add(self._background_color)
+        self.canvas.before.add(self._background_rect)
+        self.bind(pos=self._update_background, size=self._update_background)
 
-        # Coordinates preserve the supplied 1600x900 menu composition.
+        warning = Label(
+            text="ORIGINAL MENU BACKGROUND ART NEEDS RESTORATION",
+            color=(1.0, 0.55, 0.35, 1),
+            font_size="14sp",
+            size_hint=(1, 0.055),
+            pos_hint={"x": 0, "top": 0.99},
+        )
+        self.add_widget(warning)
+
+        # Coordinates preserve the supplied 1600x900 button composition.
         self.add_widget(ArtworkButton(
             self._open_practice,
             source=self._art_paths["practice"],
@@ -97,6 +106,10 @@ class MainMenu(FloatLayout):
             size_hint=(0.328, 0.180),
             pos_hint={"x": 0.603, "top": 0.383},
         ))
+
+    def _update_background(self, *_):
+        self._background_rect.pos = self.pos
+        self._background_rect.size = self.size
 
     def _start_optional_music(self):
         project_root = Path(__file__).resolve().parents[1]
@@ -120,12 +133,7 @@ class MainMenu(FloatLayout):
         content.add_widget(label)
         close = Button(text="BACK", size_hint_y=None, height=48)
         content.add_widget(close)
-        popup = Popup(
-            title=title,
-            content=content,
-            size_hint=(0.78, 0.48),
-            auto_dismiss=True,
-        )
+        popup = Popup(title=title, content=content, size_hint=(0.78, 0.48))
         close.bind(on_release=popup.dismiss)
         popup.open()
 
@@ -152,12 +160,7 @@ class MainMenu(FloatLayout):
         content.add_widget(slider)
         close = Button(text="BACK", size_hint_y=None, height=48)
         content.add_widget(close)
-        popup = Popup(
-            title="FIELD SETTINGS",
-            content=content,
-            size_hint=(0.72, 0.40),
-            auto_dismiss=True,
-        )
+        popup = Popup(title="FIELD SETTINGS", content=content, size_hint=(0.72, 0.40))
         def set_volume(_slider, value):
             if self._music:
                 self._music.volume = value
