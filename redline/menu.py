@@ -34,7 +34,6 @@ class ArtworkButton(ButtonBehavior, Image):
     def __init__(self, callback, **kwargs):
         super().__init__(**kwargs)
         self.fit_mode = "fill"
-        self.allow_stretch = True
         self._callback = callback
         self.bind(on_release=self._activate)
 
