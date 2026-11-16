@@ -1,47 +1,39 @@
 # REDLINE
 
-REDLINE is a native Godot 2D multiplayer survival game for Android. The visual direction is an atmospheric isometric world combining high-resolution illustrated environment art, selected HD pixel-art details, hand-detailed sprites and layered 2D lighting.
+REDLINE is an Android-first, isometric 2D multiplayer survival game. The active development direction on this branch is **Python + Kivy**.
 
-## Current map milestone
+## Active Python migration
 
-**Asymmetric Quarantine Arena — two-team wall-break / train-escape layout**
+- Python 3.11+
+- Kivy 2.3.1 for 2D rendering, touch UI and Android lifecycle
+- Pillow for reading the supplied WebP artwork
+- Buildozer / python-for-android for Android APK/AAB packaging
+- GitHub Actions for automated validation and Android builds
 
-- Zombies and Survivors begin in separate territories.
-- A segmented, collision-backed wall divides the arena.
-- Zombies have three designated wall-weakening task stations in their territory.
-- Survivors have generator, track-switch and train-fuel task stations.
-- Survivor spawn markers and the train extraction area occupy the Survivor side.
-- Team task areas, spawn markers and nine wall-segment collision bodies are created as actual Godot nodes.
+The Godot files and earlier branches are retained as historical source material. They are no longer the active runtime for this branch.
 
-This is a map foundation, not yet a playable match. Task progress, wall damage, combat, revive timing, player movement, online synchronization, final artwork and mobile controls still need their own implementations.
+## Preserved supplied artwork
 
-## Engine
+The original menu artwork archive is retained unchanged at `assets/menu/menu_art.zip`. The Python menu reads its original four WebP files and converts runtime copies for Kivy; it does not replace the supplied artwork with generated shapes.
 
-- Godot **4.7.2-stable**
-- GDScript and native Godot 2D rendering
-- Mobile renderer (Android-first baseline)
-- Isometric grid projection: 128 × 64 px cells
-- Scene layers reserved for ground, environment, structures, actors, overhead elements and gameplay nodes
+See [the asset inventory](docs/PYTHON_ASSET_INVENTORY.md) and [the migration status](PYTHON_MIGRATION.md).
 
-## Open the project
+## Current gameplay direction
 
-1. Install Godot 4.7.2-stable.
-2. Import this repository's `project.godot`.
-3. Run the project to inspect the active Asymmetric Quarantine Arena blockout.
-4. Read [the current map specification](docs/ASYMMETRIC_ARENA.md) and [the asset handoff specification](docs/ART_HANDOFF.md).
+- Survivors and Dead (Zombies) start in separate territories divided by a wall.
+- Zombies complete objectives to weaken and breach the wall.
+- Survivors complete objectives to prepare the train for escape.
+- Zombies entering survivor territory after the breach trigger HUNT.
+- Zombie attacks use a cooldown.
+- Survivors are knocked down for 20 seconds and can be revived during that window.
 
-The earlier Terminal 09 blockout is retained in the repository as inactive historical work; it is no longer the launch scene.
+## Run
 
-## Current status
+Desktop:
+`python -m pip install -r requirements.txt`
+`python main.py`
 
-- [x] Establish the native Godot project and Android export pipeline.
-- [x] Establish the two-territory map footprint, central wall, task markers and team spawn markers.
-- [x] Add wall-segment collision bodies and interaction areas for task stations.
-- [ ] Implement team task progress and wall segment damage/state changes.
-- [ ] Add player movement, mobile controls, combat and the 20-second downed/revive loop.
-- [ ] Add train preparation and extraction flow.
-- [ ] Import final environment artwork, animation, lighting, sound and ambience.
-- [ ] Implement online multiplayer and offline AI teammates.
-- [ ] Validate Android exports and test on actual devices.
+Android:
+`buildozer android debug`
 
-A successful headless validation or APK export does not by itself mean the game has been playtested on an Android device.
+The Python validation workflow checks compilation, Kivy imports and gameplay-rule tests. An APK is not claimed until the Android workflow produces a real artifact. A successful build is not a substitute for gameplay testing on a device.
