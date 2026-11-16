@@ -29,5 +29,24 @@ jobs:
         env:
           KIVY_NO_ARGS: "1"
         run: xvfb-run -a python -c "from redline.app import RedlineApp; from redline.menu import MainMenu; print('REDLINE Kivy modules imported')"
+      - name: Instantiate the image-backed menu under a virtual display
+        env:
+          KIVY_NO_ARGS: "1"
+        run: |
+          xvfb-run -a python - <<'PY'
+          from kivy.app import App
+          from kivy.clock import Clock
+          from redline.menu import MainMenu
+
+          class MenuSmokeApp(App):
+              def build(self):
+                  menu = MainMenu()
+                  assert len(menu.children) == 4
+                  return menu
+
+          app = MenuSmokeApp()
+          Clock.schedule_once(lambda _dt: app.stop(), 0.5)
+          app.run()
+          PY
       - name: Run gameplay and supplied-art tests
         run: python -m pytest -q
