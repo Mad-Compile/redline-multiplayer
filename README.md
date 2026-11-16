@@ -14,7 +14,7 @@ The Godot files and earlier branches are retained as historical source material.
 
 ## Preserved supplied artwork
 
-The original menu artwork archive is retained unchanged at `assets/menu/menu_art.zip`. The Python menu reads its original four WebP files and converts runtime copies for Kivy; it does not replace the supplied artwork with generated shapes.
+The original menu archive is retained unchanged at `assets/menu/menu_art.zip`, but its background image and ZIP directory are truncated. The three intact supplied button images were recovered byte-for-byte into `assets/menu/menu_buttons_recovered.zip`. The Python menu uses those images and flags the missing background; it is not yet the finished menu.
 
 See [the asset inventory](docs/PYTHON_ASSET_INVENTORY.md) and [the migration status](PYTHON_MIGRATION.md).
 
