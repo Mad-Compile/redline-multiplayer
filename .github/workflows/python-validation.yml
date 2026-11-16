@@ -17,9 +17,13 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - name: Install test dependencies
-        run: python -m pip install --upgrade pip pytest
+      - name: Install application and test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
       - name: Compile Python sources
         run: python -m compileall -q main.py redline
+      - name: Import the Kivy application modules
+        env:
+          KIVY_NO_ARGS: "1"
+        run: python -c "from redline.app import RedlineApp; from redline.menu import MainMenu; print('REDLINE Kivy modules imported')"
       - name: Run gameplay rule tests
         run: python -m pytest -q
