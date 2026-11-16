@@ -1,0 +1,30 @@
+name: REDLINE Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "python-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Python migration
+        uses: actions/checkout@v4
+      - name: Build Android APK with Buildozer
+        id: buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          workdir: .
+          buildozer_version: stable
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: REDLINE-Android-debug
+          path: ${{ steps.buildozer.outputs.filename }}
+          if-no-files-found: error
+          retention-days: 14
