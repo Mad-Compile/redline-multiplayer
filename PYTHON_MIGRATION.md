@@ -22,7 +22,7 @@ The Gemini map package is not yet fully portable: the staging branch contains it
 ## Current Python work
 
 - Kivy application bootstrap and image-backed main menu
-- Original menu archive loading
+- Recovery and loading of the three intact original menu button images
 - Functional settings volume control when theme audio is present
 - Explicitly honest Practice / Multiplayer notices until those systems are connected
 - Engine-independent match rules ported from the supplied Gemini scripts:
