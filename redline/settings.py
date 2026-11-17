@@ -333,26 +333,26 @@ class RedlineSelectorPanel(RedlineSettingsPanel):
         controls = BoxLayout(orientation="horizontal", spacing=dp(3), size_hint_x=0.57)
         self.add_widget(controls)
 
-        self.left = ArtworkButton(
+        self.left_button = ArtworkButton(
             lambda: self.on_step(self.key, -1),
             click_sound=click_sound,
             source=left_image,
             size_hint=(None, None),
             size=(dp(54), dp(54)),
         )
-        controls.add_widget(self.left)
+        controls.add_widget(self.left_button)
 
         self.value_display = RedlineValueDisplay(text=value)
         controls.add_widget(self.value_display)
 
-        self.right = ArtworkButton(
+        self.right_button = ArtworkButton(
             lambda: self.on_step(self.key, 1),
             click_sound=click_sound,
             source=right_image,
             size_hint=(None, None),
             size=(dp(54), dp(54)),
         )
-        controls.add_widget(self.right)
+        controls.add_widget(self.right_button)
 
     def set_value(self, value):
         self.value_display.set_text(value)
