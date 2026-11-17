@@ -36,4 +36,6 @@ Desktop:
 Android:
 `buildozer android debug`
 
+For CI Android packaging, `.github/workflows/python-android-apk.yml` validates the Python/Kivy app, builds an arm64 debug APK, checks that the APK is non-empty, and uploads it as the `REDLINE-Android-Debug-APK` artifact. A push to this `python/**` branch pattern triggers the workflow. The artifact is a build of the current Python branch and is not a statement that multiplayer or complete match gameplay is finished.
+
 The Python validation workflow checks compilation, Kivy imports and gameplay-rule tests. An APK is not claimed until the Android workflow produces a real artifact. A successful build is not a substitute for gameplay testing on a device.
