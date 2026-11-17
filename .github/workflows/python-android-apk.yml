@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "python/**"
+  pull_request:
+    branches:
+      - "python/**"
   workflow_dispatch:
 
 permissions:
