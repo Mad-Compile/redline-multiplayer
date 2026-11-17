@@ -138,12 +138,12 @@ class MainMenu(FloatLayout):
         popup.open()
 
     def _open_practice(self):
-        self._popup(
-            "PRACTICE MODE",
-            "The Python gameplay scene is not connected yet. "
-            "This button will launch the real practice match once its map, "
-            "character assets and controls are integrated.",
-        )
+        # MAP 01 is integrated as a source-driven, interactive location browser.
+        # It is explicitly a schematic preview, not a false playable-match claim.
+        app = App.get_running_app()
+        from redline.gameplay.map_screen import MapScreen
+
+        app.root = MapScreen(on_back=lambda: setattr(app, "root", self))
 
     def _open_match(self):
         self._popup(
