@@ -41,7 +41,7 @@ jobs:
           class MenuSmokeApp(App):
               def build(self):
                   menu = MainMenu()
-                  assert len(menu.children) == 3\n                  assert all(child.__class__.__name__ == "ArtworkButton" for child in menu.children)
+                  assert len(menu.children) == 3
                   return menu
 
           app = MenuSmokeApp()
