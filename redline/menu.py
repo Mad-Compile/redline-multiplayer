@@ -25,6 +25,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from PIL import Image as PILImage
 
 
 ARTWORK = {
