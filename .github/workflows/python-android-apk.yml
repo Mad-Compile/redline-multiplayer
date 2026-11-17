@@ -1,0 +1,111 @@
+name: REDLINE Android APK
+
+on:
+  push:
+    branches:
+      - "python/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: redline-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Python/Kivy app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Python branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Linux display dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libmtdev1
+
+      - name: Install app and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Compile application sources
+        run: python -m compileall -q main.py redline
+
+      - name: Smoke-test Kivy application and MAP 01 viewer
+        env:
+          KIVY_NO_ARGS: "1"
+        run: |
+          xvfb-run -a python - <<'PY'
+          from kivy.app import App
+          from kivy.clock import Clock
+          from redline.app import RedlineApp
+          from redline.gameplay.map_data import load_map_layout
+          from redline.gameplay.map_screen import MapScreen
+
+          layout = load_map_layout()
+          assert len(layout["scenes"]) == 39
+          screen = MapScreen(on_back=lambda: None)
+          assert len(screen.map_canvas.children) == 39
+
+          class SmokeApp(App):
+              def build(self):
+                  return RedlineApp().build()
+
+          app = SmokeApp()
+          Clock.schedule_once(lambda _dt: app.stop(), 0.5)
+          app.run()
+          print("Kivy startup and all 39 MAP 01 locations passed")
+          PY
+
+      - name: Run gameplay rule and asset tests
+        run: python -m pytest -q
+
+  build-android:
+    name: Build installable Android debug APK
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 180
+    steps:
+      - name: Checkout Python branch
+        uses: actions/checkout@v4
+
+      - name: Build APK with Buildozer
+        id: buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          workdir: .
+          buildozer_version: stable
+
+      - name: Verify APK and generate checksum
+        shell: bash
+        run: |
+          APK_PATH="${{ steps.buildozer.outputs.filename }}"
+          test -n "$APK_PATH"
+          test -s "$APK_PATH"
+          case "$APK_PATH" in
+            *.apk) ;;
+            *) echo "Buildozer output is not an APK: $APK_PATH"; exit 1 ;;
+          esac
+          sha256sum "$APK_PATH" > REDLINE-android-debug.sha256
+          echo "APK verified: $APK_PATH"
+          ls -lh "$APK_PATH" REDLINE-android-debug.sha256
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: REDLINE-Android-Debug-APK
+          path: |
+            ${{ steps.buildozer.outputs.filename }}
+            REDLINE-android-debug.sha256
+          if-no-files-found: error
+          retention-days: 30
