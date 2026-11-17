@@ -18,7 +18,7 @@ android.accept_sdk_license = True
 # Pin python-for-android to the upstream fix for its build-venv pip self-upgrade
 # issue (#3360). The current default master branch still hits the broken path.
 p4a.branch = develop
-p4a.commit = 0382d27de2f7315ed98e74884bafb30365decdee
+p4a.commit = 5865575d81d53617784428ee29f57be2716311ea
 
 [buildozer]
 log_level = 2
