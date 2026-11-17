@@ -41,7 +41,9 @@ jobs:
           class MenuSmokeApp(App):
               def build(self):
                   menu = MainMenu()
-                  assert len(menu.children) == 3
+                  assert len(menu.children) == 4
+                  assert menu._background_image.source.endswith("menu_background.webp")
+                  assert sum(child.__class__.__name__ == "ArtworkButton" for child in menu.children) == 3
                   return menu
 
           app = MenuSmokeApp()
