@@ -155,12 +155,22 @@ class MainMenu(FloatLayout):
         return sound
 
     def _build_menu(self):
-        # Keep the background deliberately neutral until the user's art arrives.
-        self._background_color = Color(0.035, 0.047, 0.055, 1)
-        self._background_rect = Rectangle(pos=self.pos, size=self.size)
-        self.canvas.before.add(self._background_color)
-        self.canvas.before.add(self._background_rect)
-        self.bind(pos=self._update_background, size=self._update_background)
+        # Use the exact supplied railway artwork as the full-screen menu layer.
+        project_root = Path(__file__).resolve().parents[1]
+        background_path = project_root / "assets" / "menu" / "menu_background.webp"
+        if not background_path.is_file():
+            raise FileNotFoundError(
+                "Supplied REDLINE menu background is missing: " + str(background_path)
+            )
+
+        self._background_image = Image(
+            source=str(background_path),
+            fit_mode="cover",
+            size_hint=(1, 1),
+        )
+        # FloatLayout draws children in reverse insertion order: keep the
+        # background at the bottom, beneath all three original image buttons.
+        self.add_widget(self._background_image, index=len(self.children))
 
         # Original supplied buttons, moved to the LEFT side of the screen.
         # Their only motion is the short scale-down / scale-up click response.
@@ -187,8 +197,8 @@ class MainMenu(FloatLayout):
         ))
 
     def _update_background(self, *_):
-        self._background_rect.pos = self.pos
-        self._background_rect.size = self.size
+        self._background_image.pos = self.pos
+        self._background_image.size = self.size
 
     def _start_optional_music(self):
         project_root = Path(__file__).resolve().parents[1]
