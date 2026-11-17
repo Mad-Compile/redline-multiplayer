@@ -15,8 +15,8 @@ android.archs = arm64-v8a
 android.permissions = INTERNET
 android.accept_sdk_license = True
 
-# Pin python-for-android to the upstream fix for its build-venv pip self-upgrade
-# issue (#3360). The current default master branch still hits the broken path.
+# Use p4a #3366: its Android-aware package installer accepts Android-tagged wheels
+# directly; the legacy host venv rejected charset-normalizer's arm64 Android wheel.
 p4a.branch = develop
 p4a.commit = 5865575d81d53617784428ee29f57be2716311ea
 
