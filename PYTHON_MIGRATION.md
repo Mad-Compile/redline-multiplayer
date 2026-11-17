@@ -17,7 +17,15 @@ The original menu artwork archive remains at `assets/menu/menu_art.zip`. The Pyt
 
 The uploaded REDLINE theme song is available in the conversation workspace but has not yet been committed into this branch. The menu supports it at `assets/audio/Redline Theme Song.mp3` once copied into the repository.
 
-The Gemini map package is not yet fully portable: the staging branch contains its scene and gameplay scripts, but its referenced `redline_iso_atlas.webp` and `redline_structures_sheet.webp` are absent from that branch. The Python migration must not replace those missing production images with generated geometry. Recover the original image files before building the final map renderer.
+### User-supplied MAP 01 package
+
+The user uploaded `REDLINE_MAP01_Python.zip`. Its ZIP integrity check passes and it contains the full-map overview, four zone exports, 39 room/scene cards, the Pillow map renderer, and the source scene definitions.
+
+- `redline/gameplay/map_data.py` now contains the source-derived layout metadata: 128×100 tiles, 32px source tile size, all 39 room/breach/railway locations, room coordinates, loot, exits, spawn points, and the eight survivor escape objectives.
+- `redline/gameplay/map_screen.py` provides an interactive room/location browser from those authored coordinates. The Practice menu button now opens this Map 01 browser.
+- CI validates all 39 location IDs and graph connections and instantiates the map viewer under Xvfb.
+- The source package has an internal count mismatch: its README/overview text says 33 scenes, but its data defines 39 (9 + 8 + 12 + 10) and the archive contains 39 scene cards. The integrated data follows the actual source definitions and uses 39.
+- The map browser is a schematic location/layout view, not a finished walkable environment or playable level. The source map PNG and individual scene-card PNGs are not yet loaded as in-game environmental textures. No claim is made that terrain art, collision, actors, or character movement are complete.
 
 ## Current Python work
 
