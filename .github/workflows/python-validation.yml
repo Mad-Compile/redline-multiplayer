@@ -48,5 +48,20 @@ jobs:
           Clock.schedule_once(lambda _dt: app.stop(), 0.5)
           app.run()
           PY
+
+      - name: Instantiate the supplied MAP 01 viewer under a virtual display
+        env:
+          KIVY_NO_ARGS: "1"
+        run: |
+          xvfb-run -a python - <<'PY'
+          from redline.gameplay.map_data import load_map_layout
+          from redline.gameplay.map_screen import MapScreen
+
+          layout = load_map_layout()
+          screen = MapScreen(on_back=lambda: None)
+          assert len(layout["scenes"]) == 39
+          assert len(screen.map_canvas.children) == 39
+          print("MAP 01 viewer instantiated with all 39 authored locations")
+          PY
       - name: Run gameplay and supplied-art tests
         run: python -m pytest -q
