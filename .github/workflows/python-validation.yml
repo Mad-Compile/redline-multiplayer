@@ -28,7 +28,7 @@ jobs:
       - name: Import the Kivy application modules
         env:
           KIVY_NO_ARGS: "1"
-        run: xvfb-run -a python -c "from redline.app import RedlineApp; from redline.menu import MainMenu; print('REDLINE Kivy modules imported')"
+        run: xvfb-run -a python -c "from redline.app import RedlineApp; from redline.menu import MainMenu; from redline.settings import SettingsScreen; print('REDLINE Kivy modules imported')"
       - name: Instantiate the image-backed menu under a virtual display
         env:
           KIVY_NO_ARGS: "1"
@@ -48,6 +48,42 @@ jobs:
                   return menu
 
           app = MenuSmokeApp()
+          Clock.schedule_once(lambda _dt: app.stop(), 0.5)
+          app.run()
+          PY
+
+      - name: Instantiate and exercise the illustrated settings screen
+        env:
+          KIVY_NO_ARGS: "1"
+        run: |
+          xvfb-run -a python - <<'PY'
+          from pathlib import Path
+          from kivy.app import App
+          from kivy.clock import Clock
+          from redline.menu import MainMenu
+          from redline.settings import SettingsScreen, SELECT_OPTIONS, load_preferences
+
+          class SettingsSmokeApp(App):
+              def build(self):
+                  menu = MainMenu()
+                  screen = SettingsScreen(
+                      on_back=lambda: None,
+                      click_sound=menu._click_sound,
+                      audio_callback=menu._apply_audio_settings,
+                  )
+                  assert set(screen._selectors) == set(SELECT_OPTIONS)
+                  assert all(Path(path).is_file() for path in screen._ui_paths.values())
+                  assert len(screen._selectors) == 5
+                  screen._step_setting("shadows", -1)
+                  assert screen.preferences["shadows"] == "Low"
+                  screen._set_volume("master_volume", 0.37)
+                  restored = load_preferences(screen._settings_path)
+                  assert restored["shadows"] == "Low"
+                  assert abs(restored["master_volume"] - 0.37) < 0.001
+                  print("REDLINE settings instantiated: 3 sliders, 5 selectors, persistent preferences")
+                  return screen
+
+          app = SettingsSmokeApp()
           Clock.schedule_once(lambda _dt: app.stop(), 0.5)
           app.run()
           PY
