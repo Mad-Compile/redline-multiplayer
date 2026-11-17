@@ -91,11 +91,17 @@ class ArtworkButton(ButtonBehavior, Image):
 class MainMenu(FloatLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        from redline.settings import load_preferences
+
+        app = App.get_running_app()
+        self._preferences_path = Path(app.user_data_dir) / "redline_settings.json"
+        self._preferences = load_preferences(self._preferences_path)
         self._music = None
         self._click_sound = self._prepare_click_sound()
         self._art_paths = self._prepare_artwork()
         self._build_menu()
         self._start_optional_music()
+        self._apply_audio_settings()
 
     def _prepare_artwork(self):
         project_root = Path(__file__).resolve().parents[1]
@@ -151,7 +157,9 @@ class MainMenu(FloatLayout):
         sound = SoundLoader.load(str(sound_path))
         if sound:
             sound.loop = False
-            sound.volume = 0.52
+            sound.volume = (
+                self._preferences["master_volume"] * self._preferences["sfx_volume"]
+            )
         return sound
 
     def _build_menu(self):
@@ -211,9 +219,18 @@ class MainMenu(FloatLayout):
                 self._music = SoundLoader.load(str(candidate))
                 if self._music:
                     self._music.loop = True
-                    self._music.volume = 0.65
+                    self._music.volume = (
+                        self._preferences["master_volume"] * self._preferences["music_volume"]
+                    )
                     self._music.play()
                 break
+
+    def _apply_audio_settings(self):
+        master = self._preferences["master_volume"]
+        if self._music:
+            self._music.volume = master * self._preferences["music_volume"]
+        if self._click_sound:
+            self._click_sound.volume = master * self._preferences["sfx_volume"]
 
     def _popup(self, title, message):
         content = BoxLayout(orientation="vertical", spacing=16, padding=20)
@@ -242,6 +259,11 @@ class MainMenu(FloatLayout):
         )
 
     def _open_settings(self):
-        # No generic Kivy volume panel: the Settings screen is intentionally
-        # held until the REDLINE-specific panel/control artwork is supplied.
-        return
+        from redline.settings import SettingsScreen
+
+        app = App.get_running_app()
+        app.root = SettingsScreen(
+            on_back=lambda: setattr(app, "root", self),
+            click_sound=self._click_sound,
+            audio_callback=self._apply_audio_settings,
+        )
