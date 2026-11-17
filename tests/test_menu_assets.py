@@ -9,6 +9,11 @@ ARTWORK = {
     "assets/menu/start_match_button.webp",
     "assets/menu/settings_button.webp",
 }
+SETTINGS_ARTWORK = {
+    "assets/ui/settings/back_button.webp",
+    "assets/ui/settings/arrow_left.webp",
+    "assets/ui/settings/arrow_right.webp",
+}
 
 
 def test_recovered_archive_contains_all_three_intact_original_buttons():
@@ -31,3 +36,15 @@ def test_original_archive_is_preserved_for_recovery():
     )
     assert original.is_file()
     assert original.stat().st_size == 26250
+
+
+def test_supplied_settings_navigation_artwork_is_present_and_valid():
+    project_root = Path(__file__).resolve().parents[1]
+    for relative_path in SETTINGS_ARTWORK:
+        asset_path = project_root / relative_path
+        assert asset_path.is_file(), relative_path
+        with Image.open(asset_path) as artwork:
+            assert artwork.format == "WEBP"
+            assert artwork.mode == "RGBA"
+            assert artwork.size == (256, 256)
+            artwork.verify()
