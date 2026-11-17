@@ -185,7 +185,7 @@ class HeaderStrip(FloatLayout):
         self._edge.size = (self.width, dp(3))
 
 
-class SettingsPanel(BoxLayout):
+class RedlineSettingsPanel(BoxLayout):
     """Dark blue industrial panel with cyan edging and a soft lower shadow."""
 
     def __init__(self, **kwargs):
@@ -213,7 +213,7 @@ class SettingsPanel(BoxLayout):
         self._inner.rounded_rectangle = (x + dp(3), y + dp(3), max(0, w - dp(6)), max(0, h - dp(6)), dp(6))
 
 
-class ValueDisplay(FloatLayout):
+class RedlineValueDisplay(FloatLayout):
     """Black inset value window, matching the supplied settings reference."""
 
     def __init__(self, text="", **kwargs):
@@ -305,7 +305,7 @@ class VolumeSlider(FloatLayout):
         return super().on_touch_up(touch)
 
 
-class VolumePanel(SettingsPanel):
+class RedlineVolumePanel(RedlineSettingsPanel):
     def __init__(self, key, value, on_change, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(2), padding=(dp(14), dp(7)), **kwargs)
         title = OutlinedText(text=VOLUME_LABELS[key], font_size=15, size_hint_y=None, height=dp(26))
@@ -315,7 +315,7 @@ class VolumePanel(SettingsPanel):
         self.slider = slider
 
 
-class SelectorPanel(SettingsPanel):
+class RedlineSelectorPanel(RedlineSettingsPanel):
     def __init__(self, key, value, options, on_step, left_image, right_image, click_sound, **kwargs):
         super().__init__(orientation="horizontal", spacing=dp(5), padding=(dp(12), dp(5)), **kwargs)
         self.key = key
@@ -342,7 +342,7 @@ class SelectorPanel(SettingsPanel):
         )
         controls.add_widget(self.left)
 
-        self.value_display = ValueDisplay(text=value)
+        self.value_display = RedlineValueDisplay(text=value)
         controls.add_widget(self.value_display)
 
         self.right = ArtworkButton(
@@ -435,7 +435,7 @@ class SettingsScreen(FloatLayout):
         content.bind(minimum_height=content.setter("height"))
 
         for key in ("master_volume", "music_volume", "sfx_volume"):
-            panel = VolumePanel(
+            panel = RedlineVolumePanel(
                 key,
                 self.preferences[key],
                 lambda value, setting=key: self._set_volume(setting, value),
@@ -446,7 +446,7 @@ class SettingsScreen(FloatLayout):
 
         self._selectors = {}
         for key, options in SELECT_OPTIONS.items():
-            panel = SelectorPanel(
+            panel = RedlineSelectorPanel(
                 key=key,
                 value=self.preferences[key],
                 options=options,
