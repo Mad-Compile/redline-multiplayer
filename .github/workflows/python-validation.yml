@@ -41,9 +41,10 @@ jobs:
           class MenuSmokeApp(App):
               def build(self):
                   menu = MainMenu()
-                  assert len(menu.children) == 4
-                  assert menu._background_image.source.endswith("menu_background.webp")
-                  assert sum(child.__class__.__name__ == "ArtworkButton" for child in menu.children) == 3
+                  print("MENU_DIAGNOSTICS", len(menu.children), menu._background_image.source, [child.__class__.__name__ for child in menu.children])
+                  assert len(menu.children) == 4, f"Expected background plus 3 buttons, got {len(menu.children)}"
+                  assert str(menu._background_image.source).endswith("menu_background.webp"), f"Unexpected background source: {menu._background_image.source!r}"
+                  assert sum(child.__class__.__name__ == "ArtworkButton" for child in menu.children) == 3, "Expected exactly three original artwork buttons"
                   return menu
 
           app = MenuSmokeApp()
