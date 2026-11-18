@@ -48,3 +48,18 @@ def test_supplied_settings_navigation_artwork_is_present_and_valid():
             assert artwork.mode == "RGBA"
             assert artwork.size == (256, 256)
             artwork.verify()
+
+
+
+def test_supplied_rusty_settings_gear_is_present_and_transparent():
+    gear = (
+        Path(__file__).resolve().parents[1]
+        / "assets" / "ui" / "settings" / "settings_gear.webp"
+    )
+    assert gear.is_file()
+    with Image.open(gear) as artwork:
+        assert artwork.format == "WEBP"
+        assert artwork.mode == "RGBA"
+        assert artwork.size == (192, 192)
+        assert artwork.getpixel((0, 0))[3] == 0
+        artwork.verify()
