@@ -115,12 +115,21 @@ class MainMenu(FloatLayout):
         output_dir.mkdir(parents=True, exist_ok=True)
         paths = {}
         with ZipFile(archive_path, "r") as archive:
-            for key, member in ARTWORK.items():
+            # Preserve and use the two original menu action buttons from the
+            # recovered archive. The new Settings gear is a separate supplied
+            # production asset, not a replacement hidden inside that archive.
+            for key in ("practice", "match"):
+                member = ARTWORK[key]
                 raw = archive.read(member)
                 output_path = output_dir / (key + ".png")
                 with PILImage.open(BytesIO(raw)) as source:
                     source.convert("RGBA").save(output_path, format="PNG")
                 paths[key] = str(output_path)
+
+        gear_path = project_root / "assets" / "ui" / "settings" / "settings_gear.webp"
+        if not gear_path.is_file():
+            raise FileNotFoundError("Supplied REDLINE settings gear is missing: " + str(gear_path))
+        paths["settings"] = str(gear_path)
         return paths
 
     def _prepare_click_sound(self):
@@ -200,8 +209,8 @@ class MainMenu(FloatLayout):
             self._open_settings,
             click_sound=self._click_sound,
             source=self._art_paths["settings"],
-            size_hint=(0.328, 0.180),
-            pos_hint={"x": 0.055, "top": 0.383},
+            size_hint=(0.120, 0.215),
+            pos_hint={"x": 0.159, "top": 0.383},
         ))
 
     def _update_background(self, *_):
