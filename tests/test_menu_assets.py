@@ -61,5 +61,9 @@ def test_supplied_rusty_settings_gear_is_present_and_transparent():
         assert artwork.format == "WEBP"
         assert artwork.mode == "RGBA"
         assert artwork.size == (192, 192)
+        # verify() alone skips pixel decoding on some Pillow/WebP builds.
+        # Force the full frame decode; this catches the exact startup crash.
+        artwork.load()
+        assert getattr(artwork, "n_frames", 1) == 1
         assert artwork.getpixel((0, 0))[3] == 0
         artwork.verify()
