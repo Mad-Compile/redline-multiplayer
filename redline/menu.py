@@ -129,7 +129,11 @@ class MainMenu(FloatLayout):
         gear_path = project_root / "assets" / "ui" / "settings" / "settings_gear.webp"
         if not gear_path.is_file():
             raise FileNotFoundError("Supplied REDLINE settings gear is missing: " + str(gear_path))
-        paths["settings"] = str(gear_path)
+        gear_output = output_dir / "settings.png"
+        if not gear_output.is_file() or gear_output.stat().st_mtime < gear_path.stat().st_mtime:
+            with PILImage.open(gear_path) as source:
+                source.convert("RGBA").save(gear_output, format="PNG")
+        paths["settings"] = str(gear_output)
         return paths
 
     def _prepare_click_sound(self):
