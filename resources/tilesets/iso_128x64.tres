@@ -1,8 +1,0 @@
-[gd_resource type="TileSet" format=3]
-
-[resource]
-tile_size = Vector2i(128, 64)
-tile_shape = 1
-tile_layout = 5
-tile_offset_axis = 0
-uv_clipping = true
