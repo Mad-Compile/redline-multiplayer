@@ -1,8 +1,4 @@
-"""REDLINE main menu using the recovered original button artwork.
-
-The original menu background is intentionally not recreated here. A neutral
-dark canvas remains until the production background artwork is supplied.
-"""
+"""REDLINE main menu using the supplied background and original button artwork."""
 from __future__ import annotations
 
 import math
@@ -294,10 +290,15 @@ class MainMenu(FloatLayout):
 
     def _apply_audio_settings(self):
         master = self._preferences["master_volume"]
-        if self._music:
-            self._music.volume = master * self._preferences["music_volume"]
-        if self._click_sound:
-            self._click_sound.volume = master * self._preferences["sfx_volume"]
+        try:
+            if self._music:
+                self._music.volume = master * self._preferences["music_volume"]
+            if self._click_sound:
+                self._click_sound.volume = master * self._preferences["sfx_volume"]
+        except Exception:
+            Logger.exception("REDLINE: audio mixer became unavailable; continuing silently")
+            self._music = None
+            self._click_sound = None
 
     def _popup(self, title, message):
         content = BoxLayout(orientation="vertical", spacing=16, padding=20)
