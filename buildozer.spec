@@ -6,7 +6,7 @@ source.dir = .
 source.include_exts = py,kv,png,jpg,jpeg,webp,zip,mp3,ttf,json
 source.exclude_dirs = .git,.github,.pytest_cache,__pycache__,tests,bin,.venv
 version = 0.1.0
-requirements = python3,kivy==2.3.1,pillow
+requirements = python3,kivy==2.3.1,pillow,libwebp
 orientation = landscape
 fullscreen = 1
 android.api = 35

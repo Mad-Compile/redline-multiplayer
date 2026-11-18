@@ -22,7 +22,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
-from PIL import Image as PILImage
+from PIL import Image as PILImage, features as PILFeatures
 
 
 ARTWORK = {
@@ -121,6 +121,14 @@ class MainMenu(FloatLayout):
         output_dir = Path(App.get_running_app().user_data_dir) / "menu_art"
         output_dir.mkdir(parents=True, exist_ok=True)
         paths = {}
+
+        # Python-for-Android builds Pillow without WebP by default. The
+        # Buildozer requirements must include the optional libwebp recipe.
+        if not PILFeatures.check("webp"):
+            raise RuntimeError(
+                "Android Pillow was built without WebP support. "
+                "The Buildozer requirements must include libwebp."
+            )
 
         # Preserve and decode the two original supplied menu action buttons.
         with ZipFile(archive_path, "r") as archive:

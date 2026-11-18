@@ -159,7 +159,12 @@ jobs:
               tail -n 400 android-startup-logcat.txt
               exit 1
             fi
-            echo "REDLINE remained alive for at least 15 seconds after Android launch."
+            if ! grep -Fq 'REDLINE: main menu constructed successfully' android-startup-logcat.txt; then
+              echo "The app process survived, but the main menu success marker was not logged."
+              tail -n 400 android-startup-logcat.txt
+              exit 1
+            fi
+            echo "REDLINE main menu constructed and process remained alive for at least 15 seconds."
             adb shell dumpsys activity activities | grep -E 'mResumedActivity|ResumedActivity' || true
 
       - name: Upload Android startup diagnostics
