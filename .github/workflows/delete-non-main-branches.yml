@@ -1,0 +1,36 @@
+name: One-time REDLINE branch consolidation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/delete-non-main-branches.yml
+
+permissions:
+  contents: write
+
+jobs:
+  retire-obsolete-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete all non-main branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="${GITHUB_REPOSITORY}"
+          for branch in \
+            "ci/verify-python-android-apk" \
+            "map/asymmetric-team-map-repair" \
+            "map/rail-yard-foundation" \
+            "prototype/v0.5.0-android-practice" \
+            "python/kivy-migration" \
+            "src" \
+            "staging/redline-map-ci"
+          do
+            echo "Deleting obsolete branch: ${branch}"
+            gh api --silent --method DELETE "repos/${repo}/git/refs/heads/${branch}"
+          done
+          echo "Only main remains."
