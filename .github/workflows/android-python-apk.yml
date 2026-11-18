@@ -112,58 +112,7 @@ jobs:
           profile: pixel_2
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            set -euo pipefail
-            APK_DIR="$GITHUB_WORKSPACE/emulator-apk"
-            DIAG_DIR="$GITHUB_WORKSPACE/android-startup-diagnostics"
-            mkdir -p "$DIAG_DIR"
-            echo "APK download contents:"
-            find "$APK_DIR" -maxdepth 4 -type f -print -ls
-            APK="$(find "$APK_DIR" -maxdepth 4 -type f -name '*.apk' -print -quit)"
-            if [ -z "$APK" ]; then
-              echo "No APK was found under $APK_DIR"
-              exit 1
-            fi
-            echo "Installing: $APK"
-            adb install -r "$APK"
-            adb logcat -c
-            adb shell am force-stop com.madcompile.redline
-            adb shell monkey -p com.madcompile.redline -c android.intent.category.LAUNCHER 1
-            PID=""
-            for attempt in $(seq 1 45); do
-              sleep 1
-              PID="$(adb shell pidof com.madcompile.redline | tr -d '\r')"
-              if [ -n "$PID" ]; then
-                break
-              fi
-            done
-            adb logcat -d -b all > "$DIAG_DIR/android-startup-logcat.txt"
-            if [ -z "$PID" ]; then
-              echo "REDLINE process exited after launch."
-              tail -n 400 "$DIAG_DIR/android-startup-logcat.txt"
-              exit 1
-            fi
-            sleep 15
-            PID_AFTER_WAIT="$(adb shell pidof com.madcompile.redline | tr -d '\r')"
-            adb exec-out screencap -p > "$DIAG_DIR/android-startup-screen.png"
-            adb logcat -d -b all > "$DIAG_DIR/android-startup-logcat.txt"
-            if [ -z "$PID_AFTER_WAIT" ]; then
-              echo "REDLINE process died during the 15-second startup observation."
-              tail -n 500 "$DIAG_DIR/android-startup-logcat.txt"
-              exit 1
-            fi
-            if grep -Eiq 'FATAL EXCEPTION|SIGSEGV|Fatal signal|REDLINE: fatal exception while constructing the main menu' "$DIAG_DIR/android-startup-logcat.txt"; then
-              echo "Fatal startup error found in Android logcat."
-              tail -n 500 "$DIAG_DIR/android-startup-logcat.txt"
-              exit 1
-            fi
-            if ! grep -Fq 'REDLINE: main menu constructed successfully' "$DIAG_DIR/android-startup-logcat.txt"; then
-              echo "The app process survived, but the main menu success marker was not logged."
-              tail -n 500 "$DIAG_DIR/android-startup-logcat.txt"
-              exit 1
-            fi
-            echo "REDLINE main menu constructed and process remained alive for at least 15 seconds."
-            adb shell dumpsys activity activities | grep -E 'mResumedActivity|ResumedActivity' || true
+          script: bash .github/scripts/android-startup-smoke.sh
 
       - name: Upload Android startup diagnostics
         if: always()
