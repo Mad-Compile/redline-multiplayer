@@ -3,7 +3,7 @@ name: REDLINE Python validation
 on:
   push:
     branches:
-      - "python/**"
+      - main
   pull_request:
     branches:
       - main

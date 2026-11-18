@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - "python/kivy-migration"
+      - main
     tags:
-      - "python-v*"
+      - "v*"
 
 permissions:
   contents: read
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
-      - name: Check out Python migration
+      - name: Check out main
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -78,7 +78,7 @@ jobs:
           sha256sum "$APK_PATH"
           ls -lh "$APK_PATH"
           echo "### Android APK build succeeded" >> "$GITHUB_STEP_SUMMARY"
-          echo "APK: `$(basename "$APK_PATH")`" >> "$GITHUB_STEP_SUMMARY"
+          echo "APK: $(basename "$APK_PATH")" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

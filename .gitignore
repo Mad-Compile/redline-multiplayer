@@ -1,9 +1,4 @@
-# Godot generated files
-.godot/
-.import/
-.export/
-
-# Local editor / operating system files
+# Local editor / operating-system files
 .DS_Store
 Thumbs.db
 *.tmp
