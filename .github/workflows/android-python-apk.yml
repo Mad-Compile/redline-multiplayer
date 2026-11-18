@@ -66,47 +66,35 @@ jobs:
         run: |
           yes | buildozer -v android debug
 
-      - name: Verify both Android APK outputs
-        id: apks
+      - name: Verify universal Android APK output
+        id: apk
         shell: bash
         run: |
           set -euo pipefail
-          ARM64_APK="$(find bin -maxdepth 1 -type f -name '*arm64-v8a*debug.apk' -print -quit)"
-          X86_64_APK="$(find bin -maxdepth 1 -type f -name '*x86_64*debug.apk' -print -quit)"
-          test -n "$ARM64_APK"
-          test -s "$ARM64_APK"
-          test -n "$X86_64_APK"
-          test -s "$X86_64_APK"
-          echo "arm64=$ARM64_APK" >> "$GITHUB_OUTPUT"
-          echo "x86_64=$X86_64_APK" >> "$GITHUB_OUTPUT"
-          sha256sum "$ARM64_APK" "$X86_64_APK"
-          ls -lh "$ARM64_APK" "$X86_64_APK"
+          APK_PATH="$(find bin -maxdepth 1 -type f -name '*arm64-v8a_x86_64*debug.apk' -print -quit)"
+          test -n "$APK_PATH"
+          test -s "$APK_PATH"
+          echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          sha256sum "$APK_PATH"
+          ls -lh "$APK_PATH"
 
-      - name: Upload Android arm64 APK
+      - name: Upload universal Android debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: REDLINE-Android-arm64-debug
-          path: ${{ steps.apks.outputs.arm64 }}
+          name: REDLINE-Android-debug
+          path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
           retention-days: 14
-
-      - name: Upload Android x86_64 emulator APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: REDLINE-Android-x86_64-smoke
-          path: ${{ steps.apks.outputs.x86_64 }}
-          if-no-files-found: error
-          retention-days: 3
 
   android-startup-smoke:
     needs: build-android
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Download x86_64 test APK
+      - name: Download universal Android test APK
         uses: actions/download-artifact@v4
         with:
-          name: REDLINE-Android-x86_64-smoke
+          name: REDLINE-Android-debug
           path: emulator-apk
 
       - name: Enable KVM
@@ -126,42 +114,52 @@ jobs:
           disable-animations: true
           script: |
             set -euo pipefail
-            APK="$(find emulator-apk -type f -name '*.apk' -print -quit)"
-            test -n "$APK"
+            APK_DIR="$GITHUB_WORKSPACE/emulator-apk"
+            DIAG_DIR="$GITHUB_WORKSPACE/android-startup-diagnostics"
+            mkdir -p "$DIAG_DIR"
+            echo "APK download contents:"
+            find "$APK_DIR" -maxdepth 4 -type f -print -ls
+            APK="$(find "$APK_DIR" -maxdepth 4 -type f -name '*.apk' -print -quit)"
+            if [ -z "$APK" ]; then
+              echo "No APK was found under $APK_DIR"
+              exit 1
+            fi
+            echo "Installing: $APK"
             adb install -r "$APK"
             adb logcat -c
             adb shell am force-stop com.madcompile.redline
             adb shell monkey -p com.madcompile.redline -c android.intent.category.LAUNCHER 1
-            for attempt in $(seq 1 30); do
+            PID=""
+            for attempt in $(seq 1 45); do
               sleep 1
               PID="$(adb shell pidof com.madcompile.redline | tr -d '\r')"
               if [ -n "$PID" ]; then
                 break
               fi
             done
-            adb logcat -d -b all > android-startup-logcat.txt
-            if [ -z "${PID:-}" ]; then
+            adb logcat -d -b all > "$DIAG_DIR/android-startup-logcat.txt"
+            if [ -z "$PID" ]; then
               echo "REDLINE process exited after launch."
-              tail -n 300 android-startup-logcat.txt
+              tail -n 400 "$DIAG_DIR/android-startup-logcat.txt"
               exit 1
             fi
             sleep 15
             PID_AFTER_WAIT="$(adb shell pidof com.madcompile.redline | tr -d '\r')"
-            adb exec-out screencap -p > android-startup-screen.png
-            adb logcat -d -b all > android-startup-logcat.txt
+            adb exec-out screencap -p > "$DIAG_DIR/android-startup-screen.png"
+            adb logcat -d -b all > "$DIAG_DIR/android-startup-logcat.txt"
             if [ -z "$PID_AFTER_WAIT" ]; then
               echo "REDLINE process died during the 15-second startup observation."
-              tail -n 400 android-startup-logcat.txt
+              tail -n 500 "$DIAG_DIR/android-startup-logcat.txt"
               exit 1
             fi
-            if grep -Eiq 'FATAL EXCEPTION|SIGSEGV|Fatal signal|REDLINE: fatal exception while constructing the main menu' android-startup-logcat.txt; then
+            if grep -Eiq 'FATAL EXCEPTION|SIGSEGV|Fatal signal|REDLINE: fatal exception while constructing the main menu' "$DIAG_DIR/android-startup-logcat.txt"; then
               echo "Fatal startup error found in Android logcat."
-              tail -n 400 android-startup-logcat.txt
+              tail -n 500 "$DIAG_DIR/android-startup-logcat.txt"
               exit 1
             fi
-            if ! grep -Fq 'REDLINE: main menu constructed successfully' android-startup-logcat.txt; then
+            if ! grep -Fq 'REDLINE: main menu constructed successfully' "$DIAG_DIR/android-startup-logcat.txt"; then
               echo "The app process survived, but the main menu success marker was not logged."
-              tail -n 400 android-startup-logcat.txt
+              tail -n 500 "$DIAG_DIR/android-startup-logcat.txt"
               exit 1
             fi
             echo "REDLINE main menu constructed and process remained alive for at least 15 seconds."
@@ -172,8 +170,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: REDLINE-Android-startup-diagnostics
-          path: |
-            android-startup-logcat.txt
-            android-startup-screen.png
+          path: ${{ github.workspace }}/android-startup-diagnostics/
           if-no-files-found: warn
           retention-days: 7
