@@ -43,8 +43,11 @@ jobs:
                   menu = MainMenu()
                   print("MENU_DIAGNOSTICS", len(menu.children), menu._background_image.source, [child.__class__.__name__ for child in menu.children])
                   assert len(menu.children) == 4, f"Expected background plus 3 buttons, got {len(menu.children)}"
-                  assert str(menu._background_image.source).endswith("menu_background.webp"), f"Unexpected background source: {menu._background_image.source!r}"
-                  assert sum(child.__class__.__name__ == "ArtworkButton" for child in menu.children) == 3, "Expected exactly three original artwork buttons"
+                  assert str(menu._background_image.source).endswith("background.png"), f"Background was not converted to PNG: {menu._background_image.source!r}"
+                  assert Path(menu._background_image.source).is_file(), "Converted background PNG is missing"
+                  artwork_buttons = [child for child in menu.children if child.__class__.__name__ == "ArtworkButton"]
+                  assert len(artwork_buttons) == 3, "Expected exactly three original artwork buttons"
+                  assert all(child.source.endswith(".png") and Path(child.source).is_file() for child in artwork_buttons), "Every startup button must use a decoded PNG cache"
                   return menu
 
           app = MenuSmokeApp()

@@ -67,3 +67,17 @@ def test_supplied_rusty_settings_gear_is_present_and_transparent():
         assert getattr(artwork, "n_frames", 1) == 1
         assert artwork.getpixel((0, 0))[3] == 0
         artwork.verify()
+
+
+def test_supplied_menu_background_fully_decodes_before_android_startup():
+    background = (
+        Path(__file__).resolve().parents[1]
+        / "assets" / "menu" / "menu_background.webp"
+    )
+    assert background.is_file()
+    with Image.open(background) as artwork:
+        assert artwork.format == "WEBP"
+        assert artwork.width > 0 and artwork.height > 0
+        artwork.load()
+        artwork.convert("RGBA").getpixel((0, 0))
+        artwork.verify()

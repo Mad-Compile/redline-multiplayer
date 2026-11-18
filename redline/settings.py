@@ -394,10 +394,12 @@ class SettingsScreen(FloatLayout):
             if not source.is_file():
                 raise FileNotFoundError(f"REDLINE settings UI artwork missing: {source}")
             output = output_dir / f"{key}.png"
-            if not output.is_file() or output.stat().st_mtime < source.stat().st_mtime:
-                from PIL import Image as PILImage
-                with PILImage.open(source) as image:
-                    image.convert("RGBA").save(output, format="PNG")
+            # Regenerate rather than trusting filesystem mtimes. Android app
+            # updates can preserve user_data_dir with stale, invalid image caches.
+            from PIL import Image as PILImage
+            with PILImage.open(source) as image:
+                image.load()
+                image.convert("RGBA").save(output, format="PNG")
             paths[key] = str(output)
         return paths
 

@@ -14,6 +14,7 @@ from zipfile import ZipFile
 
 from kivy.animation import Animation
 from kivy.app import App
+from kivy.logger import Logger
 from kivy.core.audio import SoundLoader
 from kivy.graphics import PopMatrix, PushMatrix, Rectangle, Scale
 from kivy.graphics import Color
@@ -83,8 +84,12 @@ class ArtworkButton(ButtonBehavior, Image):
         ).start(self)
 
         if self._click_sound:
-            self._click_sound.stop()
-            self._click_sound.play()
+            try:
+                self._click_sound.stop()
+                self._click_sound.play()
+            except Exception:
+                Logger.exception("REDLINE: click audio playback failed; continuing without SFX")
+                self._click_sound = None
         self._callback()
 
 
@@ -104,6 +109,12 @@ class MainMenu(FloatLayout):
         self._apply_audio_settings()
 
     def _prepare_artwork(self):
+        """Decode every startup WebP with Pillow and give Kivy only PNG files.
+
+        Always regenerate the private copies. Android app updates can retain
+        user_data_dir across installs, and asset mtimes are not reliable cache
+        invalidators there.
+        """
         project_root = Path(__file__).resolve().parents[1]
         archive_path = project_root / "assets" / "menu" / "menu_buttons_recovered.zip"
         if not archive_path.is_file():
@@ -114,25 +125,60 @@ class MainMenu(FloatLayout):
         output_dir = Path(App.get_running_app().user_data_dir) / "menu_art"
         output_dir.mkdir(parents=True, exist_ok=True)
         paths = {}
+
+        # Preserve and decode the two original supplied menu action buttons.
         with ZipFile(archive_path, "r") as archive:
-            # Preserve and use the two original menu action buttons from the
-            # recovered archive. The new Settings gear is a separate supplied
-            # production asset, not a replacement hidden inside that archive.
             for key in ("practice", "match"):
                 member = ARTWORK[key]
                 raw = archive.read(member)
                 output_path = output_dir / (key + ".png")
-                with PILImage.open(BytesIO(raw)) as source:
-                    source.convert("RGBA").save(output_path, format="PNG")
+                try:
+                    with PILImage.open(BytesIO(raw)) as source:
+                        source.load()
+                        source.convert("RGBA").save(output_path, format="PNG")
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Unable to decode original REDLINE {key} button artwork"
+                    ) from exc
+                if not output_path.is_file() or output_path.stat().st_size == 0:
+                    raise RuntimeError(f"REDLINE {key} button PNG conversion produced no file")
                 paths[key] = str(output_path)
 
+        # Kivy's Android image providers are not consistent across all WebP
+        # builds. Decode the supplied background through Pillow and pass a
+        # lossless PNG to Kivy instead of giving Kivy a WebP source directly.
+        background_source = project_root / "assets" / "menu" / "menu_background.webp"
+        if not background_source.is_file():
+            raise FileNotFoundError(
+                "Supplied REDLINE menu background is missing: " + str(background_source)
+            )
+        background_output = output_dir / "background.png"
+        try:
+            with PILImage.open(background_source) as source:
+                source.load()
+                if source.width <= 0 or source.height <= 0:
+                    raise ValueError("background image has an empty canvas")
+                source.convert("RGBA").save(background_output, format="PNG")
+        except Exception as exc:
+            raise RuntimeError("Unable to fully decode supplied REDLINE menu background") from exc
+        if not background_output.is_file() or background_output.stat().st_size == 0:
+            raise RuntimeError("REDLINE menu background PNG conversion produced no file")
+        paths["background"] = str(background_output)
+
+        # The Settings gear is separate supplied production artwork. Always
+        # decode it again so a stale/corrupt PNG from an older APK cannot persist.
         gear_path = project_root / "assets" / "ui" / "settings" / "settings_gear.webp"
         if not gear_path.is_file():
             raise FileNotFoundError("Supplied REDLINE settings gear is missing: " + str(gear_path))
         gear_output = output_dir / "settings.png"
-        if not gear_output.is_file() or gear_output.stat().st_mtime < gear_path.stat().st_mtime:
+        try:
             with PILImage.open(gear_path) as source:
+                source.load()
                 source.convert("RGBA").save(gear_output, format="PNG")
+        except Exception as exc:
+            raise RuntimeError("Unable to fully decode supplied REDLINE Settings gear") from exc
+        if not gear_output.is_file() or gear_output.stat().st_size == 0:
+            raise RuntimeError("REDLINE Settings gear PNG conversion produced no file")
         paths["settings"] = str(gear_output)
         return paths
 
@@ -167,7 +213,11 @@ class MainMenu(FloatLayout):
                 sound_file.setframerate(sample_rate)
                 sound_file.writeframes(bytes(samples))
 
-        sound = SoundLoader.load(str(sound_path))
+        try:
+            sound = SoundLoader.load(str(sound_path))
+        except Exception:
+            Logger.exception("REDLINE: unable to initialize click audio; continuing silently")
+            return None
         if sound:
             sound.loop = False
             sound.volume = (
@@ -176,16 +226,10 @@ class MainMenu(FloatLayout):
         return sound
 
     def _build_menu(self):
-        # Use the exact supplied railway artwork as the full-screen menu layer.
-        project_root = Path(__file__).resolve().parents[1]
-        background_path = project_root / "assets" / "menu" / "menu_background.webp"
-        if not background_path.is_file():
-            raise FileNotFoundError(
-                "Supplied REDLINE menu background is missing: " + str(background_path)
-            )
-
+        # The supplied background has already been fully decoded to a PNG in
+        # app-private storage by _prepare_artwork().
         self._background_image = Image(
-            source=str(background_path),
+            source=self._art_paths["background"],
             fit_mode="cover",
             size_hint=(1, 1),
         )
@@ -229,13 +273,23 @@ class MainMenu(FloatLayout):
         ]
         for candidate in candidates:
             if candidate.is_file():
-                self._music = SoundLoader.load(str(candidate))
-                if self._music:
-                    self._music.loop = True
-                    self._music.volume = (
-                        self._preferences["master_volume"] * self._preferences["music_volume"]
+                try:
+                    self._music = SoundLoader.load(str(candidate))
+                    if self._music:
+                        self._music.loop = True
+                        self._music.volume = (
+                            self._preferences["master_volume"] * self._preferences["music_volume"]
+                        )
+                        self._music.play()
+                    else:
+                        Logger.warning(
+                            "REDLINE: theme music decoder unavailable; continuing without music"
+                        )
+                except Exception:
+                    self._music = None
+                    Logger.exception(
+                        "REDLINE: theme music startup failed; continuing without music"
                     )
-                    self._music.play()
                 break
 
     def _apply_audio_settings(self):
