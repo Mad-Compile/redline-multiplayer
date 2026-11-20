@@ -43,7 +43,9 @@ jobs:
               def build(self):
                   menu = MainMenu()
                   print("MENU_DIAGNOSTICS", len(menu.children), menu._background_image.source, [child.__class__.__name__ for child in menu.children])
-                  assert len(menu.children) == 4, f"Expected background plus 3 buttons, got {len(menu.children)}"
+                  assert len(menu.children) == 6, f"Expected background, 3 artwork buttons and 2 branding elements, got {len(menu.children)}"
+                  assert any(child.__class__.__name__ == "BoxLayout" for child in menu.children), "Cinematic identity panel is missing"
+                  assert any(child.__class__.__name__ == "Label" for child in menu.children), "Menu footer branding is missing"
                   assert str(menu._background_image.source).endswith("background.png"), f"Background was not converted to PNG: {menu._background_image.source!r}"
                   assert Path(menu._background_image.source).is_file(), "Converted background PNG is missing"
                   artwork_buttons = [child for child in menu.children if child.__class__.__name__ == "ArtworkButton"]
