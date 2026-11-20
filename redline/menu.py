@@ -12,7 +12,7 @@ from kivy.animation import Animation
 from kivy.app import App
 from kivy.logger import Logger
 from kivy.core.audio import SoundLoader
-from kivy.graphics import PopMatrix, PushMatrix, Rectangle, Scale
+from kivy.graphics import PopMatrix, PushMatrix, Rectangle, RoundedRectangle, Scale
 from kivy.graphics import Color
 from kivy.properties import NumericProperty
 from kivy.uix.behaviors import ButtonBehavior
@@ -230,19 +230,15 @@ class MainMenu(FloatLayout):
         return sound
 
     def _build_menu(self):
-        # The supplied background has already been fully decoded to a PNG in
-        # app-private storage by _prepare_artwork().
+        """Build a cinematic survival-horror menu around the supplied artwork."""
         self._background_image = Image(
             source=self._art_paths["background"],
             fit_mode="cover",
             size_hint=(1, 1),
         )
-        # FloatLayout draws children in reverse insertion order: keep the
-        # background at the bottom, beneath all three original image buttons.
         self.add_widget(self._background_image, index=len(self.children))
 
-        # Original supplied buttons, moved to the LEFT side of the screen.
-        # Their only motion is the short scale-down / scale-up click response.
+        # Keep the original supplied action artwork intact and easy to reach.
         self.add_widget(ArtworkButton(
             self._open_practice,
             click_sound=self._click_sound,
@@ -264,6 +260,98 @@ class MainMenu(FloatLayout):
             size_hint=(0.120, 0.215),
             pos_hint={"x": 0.159, "top": 0.383},
         ))
+
+        # Right-side identity panel: restrained red accents, dark glass and
+        # strong typography give the existing background room to breathe.
+        from kivy.metrics import dp
+
+        info = BoxLayout(
+            orientation="vertical",
+            spacing=dp(8),
+            padding=(dp(25), dp(22)),
+            size_hint=(0.43, 0.54),
+            pos_hint={"right": 0.955, "center_y": 0.51},
+        )
+        with info.canvas.before:
+            Color(0.012, 0.016, 0.021, 0.78)
+            panel_bg = RoundedRectangle(
+                pos=info.pos, size=info.size, radius=[dp(8)]
+            )
+            Color(0.78, 0.055, 0.065, 1)
+            panel_edge = Rectangle(
+                pos=(info.x, info.y), size=(dp(4), info.height)
+            )
+
+        def sync_panel(*_):
+            panel_bg.pos, panel_bg.size = info.pos, info.size
+            panel_edge.pos = (info.x, info.y)
+            panel_edge.size = (dp(4), info.height)
+
+        info.bind(pos=sync_panel, size=sync_panel)
+
+        eyebrow = Label(
+            text="SURVIVAL PROTOCOL   /   09",
+            color=(0.88, 0.20, 0.20, 1),
+            font_size="13sp",
+            bold=True,
+            halign="left",
+            valign="middle",
+            size_hint_y=None,
+            height=dp(28),
+        )
+        eyebrow.bind(size=lambda w, s: setattr(w, "text_size", s))
+        info.add_widget(eyebrow)
+
+        title = Label(
+            text="REDLINE",
+            color=(0.96, 0.96, 0.93, 1),
+            font_size="54sp",
+            bold=True,
+            halign="left",
+            valign="middle",
+            size_hint_y=None,
+            height=dp(78),
+        )
+        title.bind(size=lambda w, s: setattr(w, "text_size", s))
+        info.add_widget(title)
+
+        subtitle = Label(
+            text="THE LAST TRAIN IS YOUR\nONLY WAY OUT.",
+            color=(0.82, 0.84, 0.84, 1),
+            font_size="20sp",
+            bold=True,
+            halign="left",
+            valign="middle",
+            size_hint_y=None,
+            height=dp(70),
+        )
+        subtitle.bind(size=lambda w, s: setattr(w, "text_size", s))
+        info.add_widget(subtitle)
+
+        detail = Label(
+            text="MAP 01  •  QUARANTINE RAIL YARD\n"
+                 "SCAVENGE. HOLD THE LINE. ESCAPE.",
+            color=(0.62, 0.66, 0.68, 1),
+            font_size="12sp",
+            halign="left",
+            valign="middle",
+        )
+        detail.bind(size=lambda w, s: setattr(w, "text_size", s))
+        info.add_widget(detail)
+        self.add_widget(info)
+
+        footer = Label(
+            text="REDLINE  /  TERMINAL 09                                      BUILD 0.1.0",
+            color=(0.86, 0.87, 0.86, 0.72),
+            font_size="11sp",
+            bold=True,
+            halign="center",
+            valign="middle",
+            size_hint=(0.72, 0.045),
+            pos_hint={"center_x": 0.5, "y": 0.018},
+        )
+        footer.bind(size=lambda w, s: setattr(w, "text_size", s))
+        self.add_widget(footer)
 
     def _update_background(self, *_):
         self._background_image.pos = self.pos
