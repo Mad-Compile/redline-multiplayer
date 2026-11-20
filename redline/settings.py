@@ -99,7 +99,7 @@ class OutlinedText(FloatLayout):
                 font_name="Roboto",
                 bold=True,
                 font_size=sp(font_size),
-                color=(0.105, 0.075, 0.055, 1),
+                color=(0.008, 0.010, 0.014, 1),
                 halign=align,
                 valign="middle",
             )
@@ -111,7 +111,7 @@ class OutlinedText(FloatLayout):
             font_name="Roboto",
             bold=True,
             font_size=sp(font_size),
-            color=(1.0, 0.965, 0.84, 1),
+            color=(0.94, 0.95, 0.96, 1),
             halign=align,
             valign="middle",
         )
@@ -136,7 +136,7 @@ class OutlinedText(FloatLayout):
 
 
 class GradientBackdrop(FloatLayout):
-    """Blue-to-cyan vertical gradient drawn with native Kivy canvas strips."""
+    """Charcoal-to-black industrial backdrop drawn with native Kivy strips."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -144,8 +144,8 @@ class GradientBackdrop(FloatLayout):
         with self.canvas.before:
             for index in range(72):
                 ratio = index / 71.0
-                top = (0.12, 0.31, 0.76)
-                bottom = (0.04, 0.78, 0.86)
+                top = (0.105, 0.115, 0.13)
+                bottom = (0.018, 0.022, 0.028)
                 color = tuple(top[c] * (1.0 - ratio) + bottom[c] * ratio for c in range(3))
                 Color(*color, 1)
                 rect = Rectangle()
@@ -168,11 +168,11 @@ class HeaderStrip(FloatLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         with self.canvas.before:
-            Color(0.025, 0.17, 0.43, 1)
+            Color(0.035, 0.040, 0.048, 1)
             self._bar = Rectangle(pos=self.pos, size=self.size)
-            Color(0.12, 0.52, 0.88, 1)
+            Color(0.82, 0.075, 0.085, 1)
             self._highlight = Rectangle()
-            Color(0.015, 0.10, 0.25, 1)
+            Color(0.012, 0.014, 0.018, 1)
             self._edge = Rectangle()
         self.bind(pos=self._layout, size=self._layout)
         self._layout()
@@ -186,18 +186,18 @@ class HeaderStrip(FloatLayout):
 
 
 class RedlineSettingsPanel(BoxLayout):
-    """Dark blue industrial panel with cyan edging and a soft lower shadow."""
+    """Dark steel panel with restrained red edging and a soft lower shadow."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         with self.canvas.before:
-            Color(0.015, 0.10, 0.18, 0.43)
+            Color(0.0, 0.0, 0.0, 0.52)
             self._shadow = RoundedRectangle(radius=[dp(8)])
-            Color(0.16, 0.31, 0.42, 1)
+            Color(0.075, 0.082, 0.092, 1)
             self._panel = RoundedRectangle(radius=[dp(8)])
-            Color(0.23, 0.76, 0.86, 0.7)
+            Color(0.82, 0.075, 0.085, 0.82)
             self._rim = Line(rounded_rectangle=(0, 0, 1, 1, dp(8)), width=1.05)
-            Color(0.29, 0.39, 0.45, 0.8)
+            Color(0.28, 0.30, 0.33, 0.8)
             self._inner = Line(rounded_rectangle=(0, 0, 1, 1, dp(6)), width=0.7)
         self.bind(pos=self._layout_panel, size=self._layout_panel)
         self._layout_panel()
@@ -247,13 +247,13 @@ class VolumeSlider(FloatLayout):
         with self.canvas:
             Color(0.02, 0.025, 0.035, 1)
             self._track = RoundedRectangle(radius=[dp(5)])
-            Color(0.96, 0.60, 0.12, 1)
+            Color(0.78, 0.055, 0.065, 1)
             self._fill = RoundedRectangle(radius=[dp(5)])
-            Color(1.0, 0.82, 0.31, 1)
+            Color(0.98, 0.22, 0.20, 1)
             self._knob = RoundedRectangle(radius=[dp(4)])
-            Color(0.31, 0.17, 0.035, 1)
+            Color(0.20, 0.025, 0.03, 1)
             self._knob_edge = Line(rounded_rectangle=(0, 0, 1, 1, dp(4)), width=1.3)
-            Color(1.0, 0.93, 0.64, 0.88)
+            Color(1.0, 0.72, 0.70, 0.88)
             self._shine = Line(points=[0, 0, 0, 0], width=1.0)
         self.bind(pos=self._layout_slider, size=self._layout_slider)
         self._layout_slider()
