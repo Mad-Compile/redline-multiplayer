@@ -242,16 +242,20 @@ class MainMenu(FloatLayout):
 
         # A restrained lower scrim keeps the original artwork visible while
         # giving the complete button row a consistent, readable foundation.
-        with self.canvas.after:
-            Color(0.015, 0.018, 0.022, 0.52)
-            self._bottom_scrim = Rectangle(pos=self.pos, size=self.size)
+        scrim = BoxLayout(
+            size_hint=(1, 0.245),
+            pos_hint={"x": 0, "y": 0},
+        )
+        with scrim.canvas.before:
+            Color(0.015, 0.018, 0.022, 0.58)
+            scrim_bg = Rectangle(pos=scrim.pos, size=scrim.size)
 
         def sync_scrim(*_):
-            self._bottom_scrim.pos = (self.x, self.y)
-            self._bottom_scrim.size = (self.width, self.height * 0.245)
+            scrim_bg.pos = scrim.pos
+            scrim_bg.size = scrim.size
 
-        self.bind(pos=sync_scrim, size=sync_scrim)
-        sync_scrim()
+        scrim.bind(pos=sync_scrim, size=sync_scrim)
+        self.add_widget(scrim)
 
         # Game identity stays at the top-left, away from the action row.
         title = Label(
