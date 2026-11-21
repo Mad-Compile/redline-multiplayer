@@ -391,8 +391,11 @@ class MainMenu(FloatLayout):
         from redline.settings import SettingsScreen
 
         app = App.get_running_app()
-        app.root = SettingsScreen(
-            on_back=lambda: setattr(app, "root", self),
-            click_sound=self._click_sound,
-            audio_callback=self._apply_audio_settings,
+        app.show_screen(
+            "settings",
+            SettingsScreen(
+                on_back=lambda: app.show_screen("menu"),
+                click_sound=self._click_sound,
+                audio_callback=self._apply_audio_settings,
+            ),
         )
