@@ -68,7 +68,10 @@ if grep -Eiq 'FATAL EXCEPTION|SIGSEGV|Fatal signal|REDLINE: fatal exception whil
   exit 1
 fi
 
-if ! grep -Fq 'REDLINE: main menu constructed successfully' "$DIAG_DIR/android-startup-logcat.txt"; then
+# Kivy's Logger renders Logger.info("REDLINE: ...") as a [REDLINE] tag
+# followed by the message, so searching for the original literal prefix
+# incorrectly failed even when the main menu had started successfully.
+if ! grep -Eq '\[REDLINE *\] main menu constructed successfully' "$DIAG_DIR/android-startup-logcat.txt"; then
   echo "::error::Process remained alive, but main-menu construction was not confirmed"
   tail -n 500 "$DIAG_DIR/android-startup-logcat.txt"
   exit 1
