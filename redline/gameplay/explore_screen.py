@@ -7,7 +7,7 @@ from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.widget import Widget
+from kivy.uix.stencilview import StencilView
 
 from redline.gameplay.map_data import load_map_layout
 
@@ -17,14 +17,13 @@ WORLD_H = 100 * TILE
 MOVE_SPEED = 190.0
 
 
-class ExploreWorld(Widget):
+class ExploreWorld(StencilView):
     """A lightweight 2D map renderer with a player-follow camera."""
 
     def __init__(self, layout, **kwargs):
         super().__init__(**kwargs)
         self.layout_data = layout
-        self.player_x = 60 * TILE
-        self.player_y = 50 * TILE
+        spawn = next((item for item in layout.get('scenes', [])\n                      if item.get('spawn') == 'survivor'), None)\n        if spawn:\n            self.player_x = (spawn['tile_x'] + spawn['tile_w'] / 2) * TILE\n            self.player_y = (100 - spawn['tile_y'] - spawn['tile_h'] / 2) * TILE\n        else:\n            self.player_x = 60 * TILE\n            self.player_y = 50 * TILE
         self.direction = [0, 0]
         self.camera_x = 0
         self.camera_y = 0
