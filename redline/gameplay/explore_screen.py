@@ -1,43 +1,107 @@
-"""Playable top-down exploration prototype for REDLINE MAP 01."""
+"""Top-down REDLINE exploration using the supplied Train Escape map artwork."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from kivy.clock import Clock
-from kivy.graphics import Color, Ellipse, Rectangle, RoundedRectangle
+from kivy.graphics import Color, Ellipse, RoundedRectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.stencilview import StencilView
+from kivy.uix.widget import Widget
 
 from redline.gameplay.map_data import load_map_layout
 
-TILE = 10
-WORLD_W = 128 * TILE
-WORLD_H = 100 * TILE
-MOVE_SPEED = 190.0
+# The supplied artwork is a 3:2 overview. Keep the game-world coordinate
+# system at the original artwork's aspect ratio so scene tile positions map
+# consistently onto the visible map.
+WORLD_W = 1536.0
+WORLD_H = 1024.0
+MOVE_SPEED = 230.0
+MAP_IMAGE_PATH = Path(__file__).resolve().parents[2] / "assets" / "maps" / "redline_train_escape.jpg"
+
+
+class SurvivorSprite(Widget):
+    """Simple original 2D survivor marker drawn above the supplied map."""
+
+    def __init__(self, **kwargs):
+        super().__init__(size_hint=(None, None), size=(dp(34), dp(42)), **kwargs)
+        with self.canvas:
+            Color(0, 0, 0, 0.48)
+            self.shadow = Ellipse()
+            Color(0.27, 0.18, 0.12, 1)
+            self.backpack = RoundedRectangle(radius=[dp(3)])
+            Color(0.72, 0.10, 0.10, 1)
+            self.jacket = RoundedRectangle(radius=[dp(4)])
+            Color(0.84, 0.68, 0.52, 1)
+            self.head = Ellipse()
+            Color(0.08, 0.08, 0.08, 1)
+            self.hair = RoundedRectangle(radius=[dp(2)])
+        self.bind(pos=self._layout, size=self._layout)
+        self._layout()
+
+    def _layout(self, *_):
+        x, y = self.pos
+        self.shadow.pos = (x + dp(5), y + dp(3))
+        self.shadow.size = (dp(25), dp(11))
+        self.backpack.pos = (x + dp(3), y + dp(10))
+        self.backpack.size = (dp(10), dp(22))
+        self.jacket.pos = (x + dp(9), y + dp(8))
+        self.jacket.size = (dp(17), dp(24))
+        self.head.pos = (x + dp(11), y + dp(27))
+        self.head.size = (dp(13), dp(13))
+        self.hair.pos = (x + dp(10), y + dp(37))
+        self.hair.size = (dp(15), dp(4))
 
 
 class ExploreWorld(StencilView):
-    """A lightweight 2D map renderer with a player-follow camera."""
+    """Scrollable camera world whose background is the user's actual map image."""
 
     def __init__(self, layout, **kwargs):
         super().__init__(**kwargs)
+        if not MAP_IMAGE_PATH.is_file():
+            raise FileNotFoundError(f"REDLINE map artwork is missing: {MAP_IMAGE_PATH}")
+
         self.layout_data = layout
+        self.direction = [0, 0]
+        self.camera_x = 0.0
+        self.camera_y = 0.0
+
         spawn = next(
             (item for item in layout.get("scenes", [])
              if item.get("spawn") == "survivor"),
             None,
         )
         if spawn:
-            self.player_x = (spawn["tile_x"] + spawn["tile_w"] / 2) * TILE
-            self.player_y = (100 - spawn["tile_y"] - spawn["tile_h"] / 2) * TILE
+            self.player_x = (
+                (spawn["tile_x"] + spawn["tile_w"] / 2) / 128.0
+            ) * WORLD_W
+            self.player_y = WORLD_H - (
+                (spawn["tile_y"] + spawn["tile_h"] / 2) / 100.0
+            ) * WORLD_H
         else:
-            self.player_x = 60 * TILE
-            self.player_y = 50 * TILE
-        self.direction = [0, 0]
-        self.camera_x = 0
-        self.camera_y = 0
-        self._draw()
+            self.player_x = WORLD_W * 0.82
+            self.player_y = WORLD_H * 0.82
+
+        # This is the exact supplied Redline Train Escape Map artwork, not a
+        # regenerated tile diagram or a placeholder room layout.
+        self.map_image = Image(
+            source=str(MAP_IMAGE_PATH),
+            allow_stretch=True,
+            keep_ratio=False,
+            size_hint=(None, None),
+            size=(WORLD_W, WORLD_H),
+            pos=self.pos,
+        )
+        self.add_widget(self.map_image)
+
+        self.player_sprite = SurvivorSprite()
+        self.add_widget(self.player_sprite)
+        self.bind(pos=self._layout_world, size=self._layout_world)
+        self._layout_world()
         self._clock = Clock.schedule_interval(self._update, 1 / 30)
 
     def set_direction(self, axis, value):
@@ -47,90 +111,24 @@ class ExploreWorld(StencilView):
         dx, dy = self.direction
         length = (dx * dx + dy * dy) ** 0.5
         if length:
-            self.player_x += (dx / length) * MOVE_SPEED * min(dt, 0.05)
-            self.player_y += (dy / length) * MOVE_SPEED * min(dt, 0.05)
-            self.player_x = max(14, min(WORLD_W - 14, self.player_x))
-            self.player_y = max(14, min(WORLD_H - 14, self.player_y))
-        self.camera_x = max(0, min(WORLD_W - self.width,
-                                   self.player_x - self.width / 2))
-        self.camera_y = max(0, min(WORLD_H - self.height,
-                                   self.player_y - self.height / 2))
-        self._draw()
+            step = MOVE_SPEED * min(max(dt, 0.0), 0.05)
+            self.player_x += (dx / length) * step
+            self.player_y += (dy / length) * step
+            self.player_x = max(12, min(WORLD_W - 12, self.player_x))
+            self.player_y = max(12, min(WORLD_H - 12, self.player_y))
+        self._layout_world()
 
-    def _screen(self, x, y):
-        return self.x + x - self.camera_x, self.y + y - self.camera_y
+    def _layout_world(self, *_):
+        max_x = max(0.0, WORLD_W - self.width)
+        max_y = max(0.0, WORLD_H - self.height)
+        self.camera_x = max(0.0, min(max_x, self.player_x - self.width / 2))
+        self.camera_y = max(0.0, min(max_y, self.player_y - self.height / 2))
 
-    def _draw(self):
-        self.canvas.clear()
-        with self.canvas:
-            Color(0.10, 0.13, 0.12, 1)
-            Rectangle(pos=self.pos, size=self.size)
-
-            # Zone ground colours preserve the four areas in the supplied map.
-            for key, zone in self.layout_data["zones"].items():
-                x = zone["x1"] * TILE
-                y = (100 - zone["y2"]) * TILE
-                w = (zone["x2"] - zone["x1"]) * TILE
-                h = (zone["y2"] - zone["y1"]) * TILE
-                sx, sy = self._screen(x, y)
-                colours = {
-                    "A": (0.20, 0.105, 0.095, 1),
-                    "B": (0.22, 0.16, 0.14, 1),
-                    "C": (0.105, 0.19, 0.12, 1),
-                    "D": (0.10, 0.15, 0.22, 1),
-                }
-                Color(*colours.get(key, (0.16, 0.16, 0.16, 1)))
-                Rectangle(pos=(sx, sy), size=(w, h))
-
-            # Main roads and rail corridor.
-            Color(0.30, 0.30, 0.29, 1)
-            for row in (2, 10, 18):
-                sy = self._screen(0, (100 - row) * TILE)[1]
-                Rectangle(pos=(self.x - self.camera_x, sy - dp(5)),
-                          size=(WORLD_W, dp(10)))
-            for col in (8, 24, 40, 70, 90, 110):
-                sx = self._screen(col * TILE, 0)[0]
-                Rectangle(pos=(sx - dp(5), self.y - self.camera_y),
-                          size=(dp(10), WORLD_H))
-
-            # Location buildings are drawn from the actual source tile bounds.
-            for scene in self.layout_data["scenes"]:
-                x = scene["tile_x"] * TILE
-                y = (100 - scene["tile_y"] - scene["tile_h"]) * TILE
-                w = scene["tile_w"] * TILE
-                h = scene["tile_h"] * TILE
-                sx, sy = self._screen(x, y)
-                Color(0.075, 0.08, 0.085, 1)
-                RoundedRectangle(pos=(sx, sy), size=(w, h), radius=[dp(3)])
-                Color(0.42, 0.40, 0.36, 1)
-                # Thin inset floor gives rooms a readable top-down footprint.
-                Rectangle(pos=(sx + 2, sy + 2),
-                          size=(max(1, w - 4), max(1, h - 4)))
-                Color(0.18, 0.20, 0.19, 1)
-                Rectangle(pos=(sx + 4, sy + 4),
-                          size=(max(1, w - 8), max(1, h - 8)))
-
-            # Player shadow, backpack, jacket and head: simple original 2D survivor.
-            px, py = self._screen(self.player_x, self.player_y)
-            Color(0, 0, 0, 0.35)
-            Ellipse(pos=(px - dp(11), py - dp(9)), size=(dp(22), dp(12)))
-            Color(0.32, 0.20, 0.12, 1)
-            RoundedRectangle(pos=(px - dp(11), py - dp(7)),
-                             size=(dp(7), dp(15)), radius=[dp(2)])
-            Color(0.72, 0.12, 0.10, 1)
-            RoundedRectangle(pos=(px - dp(7), py - dp(10)),
-                             size=(dp(14), dp(19)), radius=[dp(4)])
-            Color(0.83, 0.67, 0.50, 1)
-            Ellipse(pos=(px - dp(6), py + dp(7)), size=(dp(12), dp(12)))
-            Color(0.10, 0.10, 0.10, 1)
-            Rectangle(pos=(px - dp(6), py + dp(15)),
-                      size=(dp(12), dp(3)))
-
-    def on_size(self, *_):
-        self._draw()
-
-    def on_pos(self, *_):
-        self._draw()
+        self.map_image.pos = (self.x - self.camera_x, self.y - self.camera_y)
+        self.player_sprite.pos = (
+            self.x + self.player_x - self.camera_x - self.player_sprite.width / 2,
+            self.y + self.player_y - self.camera_y - self.player_sprite.height / 2,
+        )
 
     def on_parent(self, *_):
         if self.parent is None and hasattr(self, "_clock"):
@@ -138,7 +136,7 @@ class ExploreWorld(StencilView):
 
 
 class ExploreScreen(BoxLayout):
-    """Playable free-roam map mode with touch movement buttons."""
+    """Free-roam mode over the supplied illustrated Train Escape map."""
 
     def __init__(self, on_back, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(5),
@@ -147,9 +145,13 @@ class ExploreScreen(BoxLayout):
         layout = load_map_layout()
 
         header = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
-        title = Label(text="REDLINE  /  MAP 01 EXPLORATION",
-                      bold=True, halign="left", valign="middle")
-        title.bind(size=lambda w, s: setattr(w, "text_size", s))
+        title = Label(
+            text="REDLINE  /  TRAIN ESCAPE",
+            bold=True,
+            halign="left",
+            valign="middle",
+        )
+        title.bind(size=lambda widget, size: setattr(widget, "text_size", size))
         header.add_widget(title)
         back = Button(text="MENU", size_hint_x=None, width=dp(82))
         back.bind(on_release=lambda *_: self.on_back())
@@ -159,15 +161,16 @@ class ExploreScreen(BoxLayout):
         self.world = ExploreWorld(layout, size_hint=(1, 1))
         self.add_widget(self.world)
 
-        controls = BoxLayout(size_hint_y=None, height=dp(112), spacing=dp(6))
-        controls.add_widget(Label(text="MOVE", size_hint_x=0.65,
-                                  bold=True, color=(0.8, 0.8, 0.8, 1)))
+        controls = BoxLayout(size_hint_y=None, height=dp(108), spacing=dp(6))
+        controls.add_widget(Label(
+            text="EXPLORE MAP 01",
+            size_hint_x=0.65,
+            bold=True,
+            color=(0.82, 0.84, 0.86, 1),
+        ))
         pad = BoxLayout(orientation="vertical", spacing=dp(3))
         middle = BoxLayout(spacing=dp(3))
-        up = Button(text="▲")
-        down = Button(text="▼")
-        left = Button(text="◀")
-        right = Button(text="▶")
+        up, down, left, right = (Button(text=label) for label in ("▲", "▼", "◀", "▶"))
         middle.add_widget(left)
         middle.add_widget(up)
         middle.add_widget(right)
@@ -176,7 +179,7 @@ class ExploreScreen(BoxLayout):
         controls.add_widget(pad)
         self.add_widget(controls)
 
-        # Buttons are hold-to-move; releasing always stops that direction.
+        # Hold-to-move touch controls. Releasing a control always stops it.
         up.bind(on_press=lambda *_: self.world.set_direction(1, 1),
                 on_release=lambda *_: self.world.set_direction(1, 0))
         down.bind(on_press=lambda *_: self.world.set_direction(1, -1),
