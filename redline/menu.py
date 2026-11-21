@@ -378,17 +378,13 @@ class MainMenu(FloatLayout):
         popup.open()
 
     def _open_practice(self):
-        # MAP 01 is integrated as a source-driven, interactive location browser.
-        # It is explicitly a schematic preview, not a false playable-match claim.
+        # Practice and Start Match both enter the current playable free-roam mode.
         app = App.get_running_app()
-        from redline.gameplay.map_screen import MapScreen
+        from redline.gameplay.explore_screen import ExploreScreen
 
-        app.root = MapScreen(on_back=lambda: setattr(app, "root", self))
+        app.root = ExploreScreen(on_back=lambda: setattr(app, "root", self))
 
     def _open_match(self):
-        # Start the current REDLINE MAP 01 game prototype directly.
-        # The map screen loads the supplied 39-location layout and lets the
-        # player inspect rooms, objectives, loot and connections.
         self._open_practice()
 
     def _open_settings(self):
