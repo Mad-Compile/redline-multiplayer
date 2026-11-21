@@ -43,7 +43,7 @@ jobs:
               def build(self):
                   menu = MainMenu()
                   print("MENU_DIAGNOSTICS", len(menu.children), menu._background_image.source, [child.__class__.__name__ for child in menu.children])
-                  assert len(menu.children) == 7, f"Expected background, 3 artwork buttons and 3 branding labels, got {len(menu.children)}"
+                  assert len(menu.children) == 8, f"Expected background, bottom scrim, 3 artwork buttons and 3 branding labels, got {len(menu.children)}"
                   assert any(getattr(child, "text", "") == "REDLINE" for child in menu.children), "REDLINE title is missing"
                   assert sum(child.__class__.__name__ == "Label" for child in menu.children) == 3, "Expected title, subtitle and footer labels"
                   assert str(menu._background_image.source).endswith("background.png"), f"Background was not converted to PNG: {menu._background_image.source!r}"
