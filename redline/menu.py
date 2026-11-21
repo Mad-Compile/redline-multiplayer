@@ -382,7 +382,7 @@ class MainMenu(FloatLayout):
         app = App.get_running_app()
         from redline.gameplay.explore_screen import ExploreScreen
 
-        app.root = ExploreScreen(on_back=lambda: setattr(app, "root", self))
+        app.show_screen("explore", ExploreScreen(on_back=lambda: app.show_screen("menu")))
 
     def _open_match(self):
         self._open_practice()
