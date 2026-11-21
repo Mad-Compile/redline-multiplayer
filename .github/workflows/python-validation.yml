@@ -108,5 +108,49 @@ jobs:
           assert len(screen.map_canvas.children) == 39
           print("MAP 01 viewer instantiated with all 39 authored locations")
           PY
+      - name: Exercise actual menu navigation under a virtual display
+        env:
+          KIVY_NO_ARGS: "1"
+        run: |
+          xvfb-run -a python - <<'PY'
+          from redline.app import RedlineApp
+          from redline.menu import ArtworkButton
+          from redline.gameplay.explore_screen import ExploreScreen
+
+          app = RedlineApp()
+          manager = app.build()
+          app.root = manager
+          assert manager.current == "menu"
+          menu = manager.get_screen("menu").children[0]
+          buttons = [child for child in menu.children if isinstance(child, ArtworkButton)]
+          assert len(buttons) == 3, f"Expected Practice, Start Match and Settings buttons; got {len(buttons)}"
+
+          practice = next(button for button in buttons if button.source == menu._art_paths["practice"])
+          start_match = next(button for button in buttons if button.source == menu._art_paths["match"])
+          settings = next(button for button in buttons if button.source == menu._art_paths["settings"])
+
+          practice.trigger_action(0)
+          assert manager.current == "explore", "Practice tap did not open exploration"
+          first_explore = manager.get_screen("explore").children[0]
+          assert isinstance(first_explore, ExploreScreen)
+          first_explore.on_back()
+          assert manager.current == "menu", "Explore MENU button did not return to menu"
+          first_explore.world._clock.cancel()
+
+          start_match.trigger_action(0)
+          assert manager.current == "explore", "Start Match tap did not open exploration"
+          second_explore = manager.get_screen("explore").children[0]
+          assert isinstance(second_explore, ExploreScreen)
+          second_explore.on_back()
+          assert manager.current == "menu", "Start Match exploration could not return to menu"
+          second_explore.world._clock.cancel()
+
+          settings.trigger_action(0)
+          assert manager.current == "settings", "Settings gear tap did not open settings"
+          manager.get_screen("settings").children[0]._go_back()
+          assert manager.current == "menu", "Settings back button did not return to menu"
+          print("PASS: Practice, Start Match, Settings and both back paths switch visible screens.")
+          PY
+
       - name: Run gameplay and supplied-art tests
         run: python -m pytest -q
