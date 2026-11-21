@@ -23,7 +23,17 @@ class ExploreWorld(StencilView):
     def __init__(self, layout, **kwargs):
         super().__init__(**kwargs)
         self.layout_data = layout
-        spawn = next((item for item in layout.get('scenes', [])\n                      if item.get('spawn') == 'survivor'), None)\n        if spawn:\n            self.player_x = (spawn['tile_x'] + spawn['tile_w'] / 2) * TILE\n            self.player_y = (100 - spawn['tile_y'] - spawn['tile_h'] / 2) * TILE\n        else:\n            self.player_x = 60 * TILE\n            self.player_y = 50 * TILE
+        spawn = next(
+            (item for item in layout.get("scenes", [])
+             if item.get("spawn") == "survivor"),
+            None,
+        )
+        if spawn:
+            self.player_x = (spawn["tile_x"] + spawn["tile_w"] / 2) * TILE
+            self.player_y = (100 - spawn["tile_y"] - spawn["tile_h"] / 2) * TILE
+        else:
+            self.player_x = 60 * TILE
+            self.player_y = 50 * TILE
         self.direction = [0, 0]
         self.camera_x = 0
         self.camera_y = 0
@@ -93,7 +103,6 @@ class ExploreWorld(StencilView):
                 Color(0.075, 0.08, 0.085, 1)
                 RoundedRectangle(pos=(sx, sy), size=(w, h), radius=[dp(3)])
                 Color(0.42, 0.40, 0.36, 1)
-                LineRect = Rectangle
                 # Thin inset floor gives rooms a readable top-down footprint.
                 Rectangle(pos=(sx + 2, sy + 2),
                           size=(max(1, w - 4), max(1, h - 4)))
