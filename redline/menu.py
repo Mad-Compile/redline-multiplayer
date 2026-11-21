@@ -301,7 +301,7 @@ class MainMenu(FloatLayout):
             self._open_settings,
             click_sound=self._click_sound,
             source=self._art_paths["settings"],
-            size_hint=(0.095, button_h},
+            size_hint=(0.095, button_h),
             pos_hint={"x": 0.715, "y": button_y},
         ))
 
