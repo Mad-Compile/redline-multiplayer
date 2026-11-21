@@ -301,12 +301,13 @@ class MainMenu(FloatLayout):
             size_hint=(0.235, button_h),
             pos_hint={"x": 0.455, "y": button_y},
         ))
+        # Settings stays in the upper-right corner, separate from game actions.
         self.add_widget(ArtworkButton(
             self._open_settings,
             click_sound=self._click_sound,
             source=self._art_paths["settings"],
-            size_hint=(0.095, button_h),
-            pos_hint={"x": 0.715, "y": button_y},
+            size_hint=(0.075, 0.12),
+            pos_hint={"right": 0.965, "top": 0.94},
         ))
 
         footer = Label(
@@ -385,11 +386,10 @@ class MainMenu(FloatLayout):
         app.root = MapScreen(on_back=lambda: setattr(app, "root", self))
 
     def _open_match(self):
-        self._popup(
-            "MULTIPLAYER",
-            "The multiplayer session and authoritative server are not "
-            "implemented yet. No fake lobby or simulated match is shown.",
-        )
+        # Start the current REDLINE MAP 01 game prototype directly.
+        # The map screen loads the supplied 39-location layout and lets the
+        # player inspect rooms, objectives, loot and connections.
+        self._open_practice()
 
     def _open_settings(self):
         from redline.settings import SettingsScreen
