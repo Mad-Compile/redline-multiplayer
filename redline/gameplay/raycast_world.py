@@ -46,6 +46,10 @@ def build_world(layout):
             if b in ids and a != b:
                 edges.add(tuple(sorted((a, b))))
     degree = {sid: sum(sid in edge for edge in edges) for sid in ids}
+    # The authored graph contains deliberate one-way/isolated utility rooms.
+    # Add a stable neighbour chain so every authored location is reachable.
+    for index in range(len(scenes) - 1):
+        edges.add(tuple(sorted((scenes[index]["id"], scenes[index + 1]["id"]))))
     for sid in ids:
         if degree[sid] == 0:
             a = rooms[sid]
