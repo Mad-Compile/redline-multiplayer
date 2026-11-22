@@ -1,11 +1,15 @@
 # REDLINE
 
-REDLINE is an Android-first, isometric 2D multiplayer survival game. The active runtime is **Python + Kivy**, and **main** is the single development branch.
+REDLINE is an Android-first zombie-survival game. The current exploration direction is **first-person 2.5D**: a ray-cast view rendered from a 2D tile/collision grid. The active runtime is **Python + Kivy**, and **main** is the single development branch.
+
+## Game specification
+
+The full project scope, controls, MAP 01 requirements, gameplay loop, multiplayer target, implementation tracker and playability quality gates are documented in [docs/GAME_SPECIFICATION.md](docs/GAME_SPECIFICATION.md).
 
 ## Runtime and Android target
 
 - Python 3.11+
-- Kivy 2.3.1 for 2D rendering, touch UI and Android lifecycle
+- Kivy 2.3.1 for rendering, touch UI and Android lifecycle
 - Pillow for decoding supplied WebP artwork
 - Buildozer / python-for-android for Android APK packaging
 - GitHub Actions for Python validation and Android builds
@@ -13,8 +17,6 @@ REDLINE is an Android-first, isometric 2D multiplayer survival game. The active 
 ## Supplied artwork
 
 The main menu uses the standalone supplied background at `assets/menu/menu_background.webp`, the recovered original Practice and Start Match buttons in `assets/menu/menu_buttons_recovered.zip`, and the supplied Settings gear at `assets/ui/settings/settings_gear.webp`. The settings screen also uses the supplied back and arrow artwork. The original `menu_art.zip` archive remains preserved unchanged.
-
-The menu can play the REDLINE theme song from `assets/audio/Redline Theme Song.mp3` when that file is present. The uploaded MP3 has not yet been committed to this repository.
 
 See [the asset inventory](docs/PYTHON_ASSET_INVENTORY.md) and [the implementation status](PYTHON_MIGRATION.md).
 
@@ -29,9 +31,9 @@ See [the asset inventory](docs/PYTHON_ASSET_INVENTORY.md) and [the implementatio
 
 ## Current implementation status
 
-The app currently includes the Kivy application bootstrap, illustrated main menu, persistent settings, a source-derived 39-location MAP 01 browser, and tested engine-independent match rules for preparation/breach/hunt phases, wall damage, team-locked objectives, attack cooldowns, knockdown and revival.
+The app includes the Kivy application bootstrap, illustrated main menu, persistent settings, source-derived 39-location MAP 01 data, a first-person 2.5D ray-cast exploration foundation, generated room/corridor grid, basic movement and collision, mobile joystick/swipe-look input, and automated tests for world connectivity, movement, collision and ray casting. Engine-independent match rules cover preparation/breach/hunt phases, wall damage, team-locked objectives, attack cooldowns, knockdown and revival.
 
-The MAP 01 browser is a schematic location browser, not a fully walkable playable level. Character movement and animation, zombie navigation/AI, collision, the gameplay HUD, train boarding/extraction, authoritative networking and a complete multiplayer session remain outstanding. Production artwork is not replaced with procedural placeholders.
+This is an exploration prototype, not a finished game. Detailed building interiors matching the supplied artwork, production environment textures, complete door/object interactions, polished zombie AI/animation/audio, the full objective-to-train extraction loop, authoritative online multiplayer and full real-device gameplay QA remain outstanding. A CI APK build proves packaging, not complete playability.
 
 ## Run
 
@@ -44,7 +46,7 @@ Android:
 
     buildozer android debug
 
-Pushes to **main** run Python validation and the arm64 Android debug APK workflow. A successful CI build proves compilation and packaging, not a successful on-device gameplay session. The APK still needs installation and device testing.
+Pushes to **main** run Python validation and the arm64 Android debug APK workflow. The APK still needs installation and device testing.
 
 ## Repository workflow
 
