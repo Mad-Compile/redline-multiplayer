@@ -378,11 +378,10 @@ class MainMenu(FloatLayout):
         popup.open()
 
     def _open_practice(self):
-        # Practice and Start Match both enter the current playable free-roam mode.
+        # Open the 2-D top-down playable Terminal Zero map.
         app = App.get_running_app()
-        from redline.gameplay.explore_screen import ExploreScreen
-
-        app.show_screen("explore", ExploreScreen(on_back=lambda: app.show_screen("menu")))
+        from redline.gameplay.topdown_map import TopDownScreen
+        app.show_screen("topdown", TopDownScreen(on_back=lambda: app.show_screen("menu")))
 
     def _open_match(self):
         self._open_practice()
